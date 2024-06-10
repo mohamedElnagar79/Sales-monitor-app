@@ -15,14 +15,6 @@ router
   .post(userValidationAdd, config.mwError, userController.createNewUser);
 
 router
-  .route("/forget-password")
-  .post(validateForgetPassword, config.mwError, userController.forgetPassword);
-
-router
-  .route("/update-password/:hash")
-  .post(validateHash, config.mwError, userController.checkForgetHash);
-
-router
   .route("/my-profile")
   .get(config.auth, userController.getUserInfoForSettings);
 
