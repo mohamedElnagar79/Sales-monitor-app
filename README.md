@@ -25,4 +25,4 @@ To run SalesMonitor locally, follow these steps:
    ```bash
    git clone https://github.com/mohamedElnagar79/Sales-monitor-app
    cd SalesMonitor
-
+   ```
