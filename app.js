@@ -6,6 +6,7 @@ const cors = require("cors");
 const path = require("path");
 const modelAssociations = require("./config/models_associations");
 const routes = require("./config/routes.js");
+require("dotenv").config();
 
 sequelize
   .sync()
