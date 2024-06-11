@@ -13,4 +13,8 @@ router
     productController.createNewProduct
   );
 
+router
+  .route("/get-all-products")
+  .get(config.auth, productController.getAllProducts);
+
 module.exports = router;
