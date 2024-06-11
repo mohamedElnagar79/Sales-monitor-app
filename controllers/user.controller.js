@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const User = require("../models/user");
+const User = require("../models/user.model.js");
 const imgMw = require("../middlewares/imageMw.js");
 const Users_path = process.env.SERVER_HOST + "/public/images/users/";
 const usersPath = process.cwd() + "/public/images/users/";

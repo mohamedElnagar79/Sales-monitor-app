@@ -1,5 +1,5 @@
 const { body, check, param } = require("express-validator");
-const User = require("../models/user");
+const User = require("../models/user.model");
 const { Op } = require("sequelize");
 
 exports.userValidationAdd = [
@@ -8,7 +8,7 @@ exports.userValidationAdd = [
     .withMessage("name is required")
     .isString()
     .withMessage("name must be only string")
-    .isLength({ min: 0, max: 10 })
+    .isLength({ min: 0, max: 191 })
     .withMessage("name length must be less than 10 characters long"),
   body("email")
     .notEmpty()
