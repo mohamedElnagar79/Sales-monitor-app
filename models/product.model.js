@@ -13,6 +13,7 @@ const Product = sequelize.define(
     name: {
       type: Sequelize.STRING(191),
       allowNull: false,
+      unique: true,
     },
     price: {
       type: Sequelize.INTEGER,
@@ -34,6 +35,9 @@ const Product = sequelize.define(
   {
     paranoid: true,
     deletedAt: "deletedAt",
+  },
+  {
+    indexes: [{ unique: true, fields: ["name"] }],
   }
 );
 
