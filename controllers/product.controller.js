@@ -28,7 +28,10 @@ exports.createNewProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({
+    let limit = req.query.rows ? +req.query.rows : 10;
+    let offset = req.query.page ? (req.query.page - 1) * limit : 0;
+
+    const products = await Product.findAndCountAll({
       attributes: [
         "id",
         "name",
@@ -38,8 +41,11 @@ exports.getAllProducts = async (req, res) => {
         "createdAt",
         "updatedAt",
       ],
+      order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
-    products.map((product) => {
+    products.rows.map((product) => {
       product.dataValues.createdAt = config.formatDate(
         product.dataValues.createdAt
       );
