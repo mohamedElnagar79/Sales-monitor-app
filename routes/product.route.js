@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const config = require("../config/middlewares");
 const productController = require("../controllers/product.controller");
-const { productValidationAdd } = require("../validations/product.validation");
+const {
+  productValidationAdd,
+  getAllProductsValidation,
+} = require("../validations/product.validation");
 
 router
   .route("/new-product")
@@ -15,6 +18,11 @@ router
 
 router
   .route("/get-all-products")
-  .get(config.auth, productController.getAllProducts);
+  .get(
+    config.auth,
+    getAllProductsValidation,
+    config.mwError,
+    productController.getAllProducts
+  );
 
 module.exports = router;

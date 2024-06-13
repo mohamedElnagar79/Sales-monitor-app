@@ -1,4 +1,4 @@
-const { body, check, param } = require("express-validator");
+const { body, check, param, query } = require("express-validator");
 const Product = require("../models/product.model");
 
 exports.productValidationAdd = [
@@ -36,4 +36,19 @@ exports.productValidationAdd = [
     .withMessage("stock must be a number")
     .isLength({ max: 191 })
     .withMessage("stock must be less than 191 characters long"),
+];
+
+exports.getAllProductsValidation = [
+  query("page")
+    .optional()
+    .isNumeric()
+    .withMessage("page must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("page length must be less than 10 characters long"),
+  query("rows")
+    .optional()
+    .isNumeric()
+    .withMessage("rows must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("rows length must be less than 10 characters long"),
 ];
