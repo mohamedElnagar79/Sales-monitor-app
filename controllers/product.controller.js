@@ -109,7 +109,7 @@ exports.DeleteOneProduct = async (req, res, next) => {
   try {
     const product = await Product.findByPk(productId);
     if (product) {
-      await product.delete();
+      await product.destroy();
       return res.status(200).json({
         status_code: 200,
         data: null,

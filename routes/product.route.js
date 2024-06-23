@@ -36,7 +36,7 @@ router
   );
 router
   .route("/delete-product/:id")
-  .put(
+  .delete(
     config.auth,
     validateDeleteOneProduct,
     config.mwError,
