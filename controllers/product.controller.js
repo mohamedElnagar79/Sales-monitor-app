@@ -76,7 +76,7 @@ exports.updateOneProduct = async (req, res, next) => {
   try {
     const product = await Product.findByPk(productId);
     if (product) {
-      product.update({
+      await product.update({
         name,
         price,
         soldPrice: soldPrice,
@@ -87,6 +87,33 @@ exports.updateOneProduct = async (req, res, next) => {
         status_code: 200,
         data: null,
         message: "product updated succesfully",
+      });
+    } else {
+      return res.status(404).json({
+        status_code: 404,
+        data: null,
+        message: "product not found",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.DeleteOneProduct = async (req, res, next) => {
+  const productId = +req.params.id;
+  try {
+    const product = await Product.findByPk(productId);
+    if (product) {
+      await product.delete();
+      return res.status(200).json({
+        status_code: 200,
+        data: null,
+        message: "product deleted succesfully",
       });
     } else {
       return res.status(404).json({

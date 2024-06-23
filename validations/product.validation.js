@@ -82,6 +82,13 @@ exports.productValidationupdate = [
     .withMessage("description must be only string")
     .isLength({ min: 0, max: 225 })
     .withMessage("description length must be less than 225 characters long"),
+  param("id")
+    .notEmpty()
+    .withMessage("id is required")
+    .isNumeric()
+    .withMessage("id must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("id length must be less than 10 characters long"),
 ];
 
 exports.getAllProductsValidation = [
@@ -97,4 +104,13 @@ exports.getAllProductsValidation = [
     .withMessage("rows must be anumber")
     .isLength({ min: 0, max: 10 })
     .withMessage("rows length must be less than 10 characters long"),
+];
+exports.validateDeleteOneProduct = [
+  param("id")
+    .notEmpty()
+    .withMessage("id is required")
+    .isNumeric()
+    .withMessage("id must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("id length must be less than 10 characters long"),
 ];

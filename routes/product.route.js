@@ -6,6 +6,7 @@ const {
   productValidationAdd,
   getAllProductsValidation,
   productValidationupdate,
+  validateDeleteOneProduct,
 } = require("../validations/product.validation");
 
 router
@@ -32,6 +33,14 @@ router
     productValidationupdate,
     config.mwError,
     productController.updateOneProduct
+  );
+router
+  .route("/delete-product/:id")
+  .put(
+    config.auth,
+    validateDeleteOneProduct,
+    config.mwError,
+    productController.DeleteOneProduct
   );
 
 module.exports = router;
