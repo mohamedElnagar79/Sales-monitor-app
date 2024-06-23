@@ -2,13 +2,14 @@ const Product = require("../models/product.model");
 const config = require("../config/middlewares");
 
 exports.createNewProduct = async (req, res) => {
-  const { name, price, soldPrice, stock } = req.body;
+  const { name, price, soldPrice, stock, description } = req.body;
   try {
     const newProduct = await Product.create({
       name,
       price,
       soldPrice: soldPrice ? soldPrice : price,
       stock,
+      description,
     });
     if (newProduct) {
       return res.status(200).json({
@@ -40,6 +41,7 @@ exports.getAllProducts = async (req, res) => {
         "stock",
         "createdAt",
         "updatedAt",
+        "description",
       ],
       order: [["createdAt", "DESC"]],
       limit,
@@ -59,6 +61,40 @@ exports.getAllProducts = async (req, res) => {
       data: products,
       message: "success",
     });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.updateOneProduct = async (req, res, next) => {
+  const { name, price, soldPrice, stock, description } = req.body;
+  const productId = +req.params.id;
+  try {
+    const product = await Product.findByPk(productId);
+    if (product) {
+      product.update({
+        name,
+        price,
+        soldPrice: soldPrice,
+        stock,
+        description,
+      });
+      return res.status(200).json({
+        status_code: 200,
+        data: null,
+        message: "product updated succesfully",
+      });
+    } else {
+      return res.status(404).json({
+        status_code: 404,
+        data: null,
+        message: "product not found",
+      });
+    }
   } catch (error) {
     return res.status(500).json({
       status_code: 500,

@@ -5,6 +5,7 @@ const productController = require("../controllers/product.controller");
 const {
   productValidationAdd,
   getAllProductsValidation,
+  productValidationupdate,
 } = require("../validations/product.validation");
 
 router
@@ -23,6 +24,14 @@ router
     getAllProductsValidation,
     config.mwError,
     productController.getAllProducts
+  );
+router
+  .route("/update-product/:id")
+  .put(
+    config.auth,
+    productValidationupdate,
+    config.mwError,
+    productController.updateOneProduct
   );
 
 module.exports = router;

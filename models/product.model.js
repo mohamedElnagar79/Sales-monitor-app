@@ -27,6 +27,11 @@ const Product = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: true,
     },
+    description: {
+      type: Sequelize.STRING(225),
+      allowNull: false,
+      default: " ",
+    },
     deletedAt: {
       type: Sequelize.DATE,
       allowNull: true,
