@@ -1,5 +1,6 @@
 const Product = require("../models/product.model");
 const config = require("../config/middlewares");
+const { Op } = require("sequelize");
 
 exports.createNewProduct = async (req, res) => {
   const { name, price, soldPrice, stock, description } = req.body;
@@ -32,6 +33,15 @@ exports.getAllProducts = async (req, res) => {
     let limit = req.query.rows ? +req.query.rows : 10;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
+    const search = req.query.search;
+    const whereClause = search
+      ? {
+          name: {
+            [Op.like]: `%${search}%`,
+          },
+        }
+      : {};
+    console.log("where ", whereClause);
     const products = await Product.findAndCountAll({
       attributes: [
         "id",
@@ -46,6 +56,7 @@ exports.getAllProducts = async (req, res) => {
       order: [["createdAt", "DESC"]],
       limit,
       offset,
+      where: whereClause,
     });
     products.rows.map((product) => {
       product.dataValues.createdAt = config.formatDate(
