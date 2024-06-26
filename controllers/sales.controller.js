@@ -1,8 +1,9 @@
 const Sales = require("../models/sales.model");
 const Product = require("../models/product.model");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const moment = require("moment");
 const config = require("../config/middlewares");
+
 exports.sellProduct = async (req, res, next) => {
   const {
     quantity,
@@ -57,6 +58,8 @@ exports.getlastsales = async (req, res) => {
     const sales = await Sales.findAndCountAll({
       attributes: [
         "id",
+        [Sequelize.col("product.id"), "productId"],
+        [Sequelize.col("product.name"), "productName"],
         "quantity",
         "piecePrice",
         "total",
@@ -64,9 +67,13 @@ exports.getlastsales = async (req, res) => {
         "remainingBalance",
         "clientName",
         "comments",
-        "updatedAt",
         "createdAt",
       ],
+      include: {
+        model: Product,
+        required: false,
+        attributes: [],
+      },
       order: [["createdAt", "DESC"]],
       limit,
       offset,
@@ -79,7 +86,6 @@ exports.getlastsales = async (req, res) => {
     });
     sales.rows.map((item) => {
       item.dataValues.createdAt = config.formatDate(item.dataValues.createdAt);
-      item.dataValues.updatedAt = config.formatDate(item.dataValues.updatedAt);
     });
 
     return res.status(200).json({

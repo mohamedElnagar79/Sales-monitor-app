@@ -141,3 +141,32 @@ exports.DeleteOneProduct = async (req, res, next) => {
     });
   }
 };
+
+exports.getlistOfProducts = async (req, res, next) => {
+  try {
+    const search = req.query.search;
+    const whereClause = search
+      ? {
+          name: {
+            [Op.like]: `%${search}%`,
+          },
+        }
+      : {};
+    const products = await Product.findAll({
+      attributes: ["id", "name", "price", "description"],
+      order: [["createdAt", "DESC"]],
+      where: whereClause,
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: products,
+      message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
