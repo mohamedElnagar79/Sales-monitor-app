@@ -114,3 +114,12 @@ exports.validateDeleteOneProduct = [
     .isLength({ min: 0, max: 10 })
     .withMessage("id length must be less than 10 characters long"),
 ];
+
+exports.getProductsListValidation = [
+  query("search")
+    .optional()
+    .isString()
+    .withMessage("search must be string")
+    .isLength({ min: 0, max: 191 })
+    .withMessage("search length must be less than 191 characters long"),
+];
