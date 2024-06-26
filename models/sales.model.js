@@ -14,7 +14,11 @@ const Sales = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: false,
     },
-    soldPrice: {
+    piecePrice: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
+    total: {
       type: Sequelize.INTEGER,
       allowNull: true,
     },
@@ -29,7 +33,6 @@ const Sales = sequelize.define(
     clientName: {
       type: Sequelize.STRING(191),
       required: true,
-      unique: true,
     },
     comments: {
       type: Sequelize.STRING(225),
@@ -46,7 +49,7 @@ const Sales = sequelize.define(
   },
 
   {
-    indexes: [{ unique: true, fields: ["clientName"] }],
+    indexes: [{ fields: ["clientName"] }],
   }
 );
 
