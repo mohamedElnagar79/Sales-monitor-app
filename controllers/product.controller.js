@@ -30,7 +30,7 @@ exports.createNewProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
-    let limit = req.query.rows ? +req.query.rows : 10;
+    let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
     const search = req.query.search;
