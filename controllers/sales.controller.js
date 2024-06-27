@@ -50,6 +50,14 @@ exports.getlastsales = async (req, res) => {
   try {
     let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
+    const search = req.query.search;
+    const whereClause = search
+      ? {
+          clientName: {
+            [Op.like]: `%${search}%`,
+          },
+        }
+      : {};
     // const startOfYesterday = moment()
     //   .subtract(1, "days")
     //   .startOf("day")
@@ -69,6 +77,7 @@ exports.getlastsales = async (req, res) => {
         "comments",
         "createdAt",
       ],
+      where: whereClause,
       include: {
         model: Product,
         required: false,
