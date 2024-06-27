@@ -50,11 +50,11 @@ exports.getlastsales = async (req, res) => {
   try {
     let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
-    const startOfYesterday = moment()
-      .subtract(1, "days")
-      .startOf("day")
-      .toDate();
-    const now = moment().toDate();
+    // const startOfYesterday = moment()
+    //   .subtract(1, "days")
+    //   .startOf("day")
+    //   .toDate();
+    // const now = moment().toDate();
     const sales = await Sales.findAndCountAll({
       attributes: [
         "id",
@@ -77,12 +77,12 @@ exports.getlastsales = async (req, res) => {
       order: [["createdAt", "DESC"]],
       limit,
       offset,
-      where: {
-        createdAt: {
-          [Op.gte]: startOfYesterday,
-          [Op.lt]: now,
-        },
-      },
+      // where: {
+      //   createdAt: {
+      //     [Op.gte]: startOfYesterday,
+      //     [Op.lt]: now,
+      //   },
+      // },
     });
     sales.rows.map((item) => {
       item.dataValues.createdAt = config.formatDate(item.dataValues.createdAt);
