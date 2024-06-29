@@ -7,3 +7,18 @@ exports.checkAttachmentType = (AttachmentEx) => {
     return false;
   });
 };
+
+exports.formatDate = (formattedDate) => {
+  const options = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+  formattedDate = formattedDate
+    .toLocaleString("en-US", options)
+    .replace(",", "");
+  return formattedDate;
+};
