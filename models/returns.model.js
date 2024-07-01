@@ -14,11 +14,6 @@ const Returns = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: true,
     },
-    description: {
-      type: Sequelize.STRING(191),
-      required: false,
-      default: "",
-    },
     reasone: {
       type: Sequelize.STRING(191),
       required: false,
