@@ -1,59 +1,82 @@
+const { Sequelize } = require("sequelize");
+const DailyExpense = require("../models/Daily_expense.model");
+const Product = require("../models/product.model");
 const Returns = require("../models/returns.model");
 const Sales = require("../models/sales.model");
 
 exports.addNewReturn = async (req, res, next) => {
-  const { SaleId, quantity, description, reasone } = req.body;
+  const { SaleId, quantity, reasone } = req.body;
   try {
+    const saleObj = await Sales.findByPk(SaleId, {
+      attributes: [
+        "id",
+        "quantity",
+        "piecePrice",
+        "total",
+        "amountPaid",
+        "remainingBalance",
+        "clientName",
+        "comments",
+        // "productId",
+        [Sequelize.col("product.id"), "productId"],
+        [Sequelize.col("product.name"), "productName"],
+      ],
+      include: {
+        model: Product,
+        required: false,
+        attributes: [],
+      },
+    });
+    if (!saleObj) {
+      throw new Error("Sale not found");
+    }
+    if (saleObj.quantity < quantity) {
+      return res.status(400).json({
+        status_code: 400,
+        data: null,
+        message: "enter a valid quantity to return",
+      });
+    }
     const newReturnObject = await Returns.create({
       SaleId,
       quantity,
-      description,
       reasone,
     });
-
     if (newReturnObject) {
-      console.log("newReturnObject ", newReturnObject.dataValues);
-      const saleObj = await Sales.findByPk(SaleId);
-      if (!saleObj) {
-        throw new Error("Sale not found");
-      }
       let returnedCost = saleObj.piecePrice * quantity;
-      //   returnedCost=saleObj.remainingBalance==0?returnedCost
-      console.log("returnedCost ", returnedCost);
-      console.log("saleobj  ", saleObj.dataValues);
-      saleObj.quantity -= quantity;
-      saleObj.total = saleObj.piecePrice * saleObj.quantity;
-      //   saleObj.amountPaid -= returnedCost;
-      let newAmountPaid;
-      if (saleObj.total != saleObj.amountPaid) {
-        newAmountPaid = saleObj.amountPaid - returnedCost;
+      if (saleObj.quantity == 1 && quantity == 1) {
+        await saleObj.destroy();
       } else {
-        newAmountPaid = saleObj.total;
-      }
-
-      if (saleObj.remainingBalance > 0) {
-        if (returnedCost > saleObj.remainingBalance) {
-          returnedCost -= saleObj.remainingBalance;
-          saleObj.remainingBalance = 0;
-        } else {
-          saleObj.remainingBalance -= returnedCost;
-          returnedCost = 0;
+        saleObj.quantity -= quantity;
+        saleObj.total = saleObj.piecePrice * saleObj.quantity;
+        if (saleObj.remainingBalance > 0) {
+          if (returnedCost > saleObj.remainingBalance) {
+            returnedCost -= saleObj.remainingBalance;
+            saleObj.remainingBalance = 0;
+          } else {
+            saleObj.remainingBalance -= returnedCost;
+            returnedCost = 0;
+          }
+        }
+        if (saleObj.total != saleObj.remainingBalance) {
+          saleObj.amountPaid = saleObj.total - saleObj.remainingBalance;
+        }
+        await saleObj.save();
+        if (saleObj.quantity == 0) {
+          await saleObj.destroy();
         }
       }
-      //   saleObj.remainingBalance =
-      //     saleObj.remainingBalance > 0
-      //       ? saleObj.remainingBalance - returnedCost
-      //       : saleObj.remainingBalance;
-      //   returnedCost =
-      //     saleObj.remainingBalance == 0 ? saleObj.remainingBalance : returnedCost;
-      console.log("after modification  ", saleObj.dataValues);
-      //   saleObj.update({
-      //     saleObj,
-      //   });
-      saleObj.amountPaid = newAmountPaid;
-
-      await saleObj.save();
       saleObj.dataValues.returnedCost = returnedCost;
+      if (returnedCost > 0) {
+        console.log("helllooo");
+        const Expenses = await DailyExpense.create({
+          amount: returnedCost,
+          expenseName: "مرتجع",
+          description: saleObj.dataValues.productName,
+          reasone,
+        });
+      }
+
       console.log("returnedCost===>   ", returnedCost);
       return res.status(200).json({
         status_code: 200,
