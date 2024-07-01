@@ -17,7 +17,7 @@ const Returns = sequelize.define(
     reasone: {
       type: Sequelize.STRING(191),
       required: false,
-      default: "",
+      default: " ",
     },
     deletedAt: {
       type: Sequelize.DATE,

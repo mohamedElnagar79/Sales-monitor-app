@@ -38,6 +38,7 @@ app.use([
   routes.loginRoute,
   routes.salesRoute,
   routes.returnsRoute,
+  routes.dailyExpenseRoute,
 ]);
 
 app.use("/public", express.static(path.join(__dirname, "public")));

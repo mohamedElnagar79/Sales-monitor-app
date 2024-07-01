@@ -21,11 +21,12 @@ const DailyExpense = sequelize.define(
     description: {
       type: Sequelize.STRING(191),
       required: false,
-      default: "",
+      default: " ",
     },
     reasone: {
       type: Sequelize.STRING(191),
-      required: true,
+      required: false,
+      default: " ",
     },
     deletedAt: {
       type: Sequelize.DATE,
