@@ -24,4 +24,7 @@ router
     config.mwError,
     salesController.getlastsales
   );
+router
+  .route("/calc-daily-sales")
+  .get(config.auth, salesController.calcDailySales);
 module.exports = router;

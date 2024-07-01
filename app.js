@@ -14,7 +14,7 @@ sequelize
     app.listen(process.env.port, () => {
       console.log("process ====>  ", process.env.Port);
       console.log(
-        `Nagar app is listening at http://localhost:${process.env.Port}`
+        `sales Monitor app is listening at http://localhost:${process.env.Port}`
       );
     });
   })
@@ -37,6 +37,8 @@ app.use([
   routes.productRoute,
   routes.loginRoute,
   routes.salesRoute,
+  routes.returnsRoute,
+  routes.dailyExpenseRoute,
 ]);
 
 app.use("/public", express.static(path.join(__dirname, "public")));

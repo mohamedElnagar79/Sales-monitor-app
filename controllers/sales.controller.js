@@ -3,6 +3,7 @@ const Product = require("../models/product.model");
 const { Op, Sequelize } = require("sequelize");
 const moment = require("moment");
 const config = require("../config/middlewares");
+const DailyExpense = require("../models/Daily_expense.model");
 
 exports.sellProduct = async (req, res, next) => {
   const {
@@ -101,6 +102,83 @@ exports.getlastsales = async (req, res) => {
       status_code: 200,
       data: sales,
       message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.calcDailySales = async (req, res, next) => {
+  try {
+    const specifiedDate = req.query.date
+      ? new Date(req.query.date)
+      : new Date();
+    specifiedDate.setHours(0, 0, 0, 0); // Start of the day
+    const nextDay = new Date(specifiedDate);
+    nextDay.setDate(specifiedDate.getDate() + 1);
+    console.log("nextDay ===> ", nextDay);
+    nextDay.setHours(0, 0, 0, 0); // Start of the next day
+
+    const sales = await Sales.findAll({
+      attributes: [
+        "id",
+        "amountPaid",
+        [Sequelize.col("product.name"), "productName"],
+        "piecePrice",
+        "quantity",
+        "total",
+        "clientName",
+      ],
+      where: {
+        createdAt: {
+          [Op.between]: [specifiedDate, nextDay],
+        },
+      },
+      include: {
+        model: Product,
+        required: false,
+        attributes: [],
+      },
+    });
+
+    const dailyExpense = await DailyExpense.findAll({
+      attributes: ["id", "amount", "description"],
+      where: {
+        createdAt: {
+          [Op.between]: [specifiedDate, nextDay],
+        },
+      },
+    });
+
+    const totalAmountPaid = sales.reduce(
+      (sum, sale) => sum + parseFloat(sale.amountPaid),
+      0
+    );
+
+    const totalDailyExpense = dailyExpense.reduce(
+      (sum, expense) => sum + parseFloat(expense.amount),
+      0
+    );
+
+    console.log("totalAmountPaid ==> ", totalAmountPaid);
+    console.log("Daily_expense ==> ", totalDailyExpense);
+
+    const totalExistMoney = totalAmountPaid - totalDailyExpense;
+
+    return res.status(200).json({
+      status_code: 200,
+      data: {
+        sales,
+        dailyExpense,
+        totalAmountPaid,
+        totalDailyExpense,
+        totalExistMoney,
+      },
+      message: "done",
     });
   } catch (error) {
     return res.status(500).json({
