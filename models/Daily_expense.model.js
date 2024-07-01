@@ -14,17 +14,14 @@ const DailyExpense = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: true,
     },
-    quantity: {
-      type: Sequelize.INTEGER,
-      allowNull: true,
-    },
     expenseName: {
       type: Sequelize.STRING(191),
       required: true,
     },
     description: {
       type: Sequelize.STRING(191),
-      required: true,
+      required: false,
+      default: "",
     },
     reasone: {
       type: Sequelize.STRING(191),
