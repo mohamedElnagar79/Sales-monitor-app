@@ -17,8 +17,8 @@ exports.addNewExpense = async (req, res, next) => {
       });
     }
   } catch (error) {
-    return res.status(200).json({
-      status_code: 200,
+    return res.status(500).json({
+      status_code: 500,
       data: null,
       message: error.message,
     });
