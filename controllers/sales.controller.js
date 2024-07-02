@@ -120,7 +120,7 @@ exports.calcDailySales = async (req, res, next) => {
     specifiedDate.setHours(0, 0, 0, 0); // Start of the day
     const nextDay = new Date(specifiedDate);
     nextDay.setDate(specifiedDate.getDate() + 1);
-    console.log("nextDay ===> ", nextDay);
+    // console.log("nextDay ===> ", nextDay);
     nextDay.setHours(0, 0, 0, 0); // Start of the next day
     let limit = req.query.rows ? +req.query.rows : 7;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
