@@ -5,6 +5,7 @@ const salesController = require("../controllers/sales.controller");
 const {
   sellProductsValidation,
   getLastSalesValidation,
+  calcDaysValidation,
 } = require("../validations/sales.validation");
 
 router
@@ -26,5 +27,10 @@ router
   );
 router
   .route("/calc-daily-sales")
-  .get(config.auth, salesController.calcDailySales);
+  .get(
+    config.auth,
+    calcDaysValidation,
+    config.mwError,
+    salesController.calcDailySales
+  );
 module.exports = router;
