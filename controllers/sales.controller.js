@@ -122,17 +122,16 @@ exports.calcDailySales = async (req, res, next) => {
     nextDay.setDate(specifiedDate.getDate() + 1);
     // console.log("nextDay ===> ", nextDay);
     nextDay.setHours(0, 0, 0, 0); // Start of the next day
-    let limit = req.query.rows ? +req.query.rows : 7;
+    let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
     const sales = await Sales.findAndCountAll({
       attributes: [
         "id",
-        "amountPaid",
         [Sequelize.col("product.name"), "productName"],
-        "piecePrice",
+        "amountPaid",
         "quantity",
-        "total",
+        "remainingBalance",
         "clientName",
       ],
       where: {
@@ -150,7 +149,7 @@ exports.calcDailySales = async (req, res, next) => {
     });
 
     const dailyExpense = await DailyExpense.findAndCountAll({
-      attributes: ["id", "amount", "description"],
+      attributes: ["id", "amount", "expenseName", "description"],
       where: {
         createdAt: {
           [Op.between]: [specifiedDate, nextDay],
