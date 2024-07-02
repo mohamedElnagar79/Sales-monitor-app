@@ -159,7 +159,6 @@ exports.calcDailySales = async (req, res, next) => {
       limit,
       offset,
     });
-    console.log("saaaaa", sales);
     const totalAmountPaid = sales.rows.reduce(
       (sum, sale) => sum + parseFloat(sale.amountPaid),
       0
