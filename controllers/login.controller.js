@@ -20,7 +20,7 @@ module.exports.login = async (req, res, next) => {
             });
           } else {
             let token;
-            let expire_date = remember == 1 ? "30d" : "1d";
+            let expire_date = remember == 1 ? "30d" : "2d";
             token = jwt.sign(
               {
                 id: user.id,
