@@ -1,6 +1,6 @@
 const Product = require("../models/product.model");
 const config = require("../config/middlewares");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
 exports.createNewProduct = async (req, res) => {
   const { name, price, soldPrice, stock, description } = req.body;
@@ -153,7 +153,12 @@ exports.getlistOfProducts = async (req, res, next) => {
         }
       : {};
     const products = await Product.findAll({
-      attributes: ["id", "name", "price", "description"],
+      attributes: [
+        "id",
+        "name",
+        [Sequelize.col("soldPrice"), "price"],
+        "description",
+      ],
       order: [["createdAt", "DESC"]],
       where: whereClause,
     });

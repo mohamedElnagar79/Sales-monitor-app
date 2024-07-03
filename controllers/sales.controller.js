@@ -120,17 +120,18 @@ exports.calcDailySales = async (req, res, next) => {
     specifiedDate.setHours(0, 0, 0, 0); // Start of the day
     const nextDay = new Date(specifiedDate);
     nextDay.setDate(specifiedDate.getDate() + 1);
-    console.log("nextDay ===> ", nextDay);
+    // console.log("nextDay ===> ", nextDay);
     nextDay.setHours(0, 0, 0, 0); // Start of the next day
+    let limit = req.query.rows ? +req.query.rows : 8;
+    let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
-    const sales = await Sales.findAll({
+    const sales = await Sales.findAndCountAll({
       attributes: [
         "id",
-        "amountPaid",
         [Sequelize.col("product.name"), "productName"],
-        "piecePrice",
+        "amountPaid",
         "quantity",
-        "total",
+        "remainingBalance",
         "clientName",
       ],
       where: {
@@ -138,6 +139,8 @@ exports.calcDailySales = async (req, res, next) => {
           [Op.between]: [specifiedDate, nextDay],
         },
       },
+      limit,
+      offset,
       include: {
         model: Product,
         required: false,
@@ -145,21 +148,22 @@ exports.calcDailySales = async (req, res, next) => {
       },
     });
 
-    const dailyExpense = await DailyExpense.findAll({
-      attributes: ["id", "amount", "description"],
+    const dailyExpense = await DailyExpense.findAndCountAll({
+      attributes: ["id", "amount", "expenseName", "description"],
       where: {
         createdAt: {
           [Op.between]: [specifiedDate, nextDay],
         },
       },
+      limit,
+      offset,
     });
-
-    const totalAmountPaid = sales.reduce(
+    const totalAmountPaid = sales.rows.reduce(
       (sum, sale) => sum + parseFloat(sale.amountPaid),
       0
     );
 
-    const totalDailyExpense = dailyExpense.reduce(
+    const totalDailyExpense = dailyExpense.rows.reduce(
       (sum, expense) => sum + parseFloat(expense.amount),
       0
     );

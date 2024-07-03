@@ -1,4 +1,4 @@
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
 
 exports.addNewExpenseValidation = [
   body("amount")
@@ -27,4 +27,19 @@ exports.addNewExpenseValidation = [
     .withMessage("reasone must be a string")
     .isLength({ max: 191 })
     .withMessage("reasone must be less than 191 characters long"),
+];
+
+exports.getExpensesValidation = [
+  query("page")
+    .optional()
+    .isNumeric()
+    .withMessage("page must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("page length must be less than 10 characters long"),
+  query("rows")
+    .optional()
+    .isNumeric()
+    .withMessage("rows must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("rows length must be less than 10 characters long"),
 ];
