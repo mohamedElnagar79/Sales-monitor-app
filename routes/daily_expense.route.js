@@ -27,7 +27,7 @@ router
 
 router
   .route("/update-expenses/:id")
-  .get(
+  .put(
     config.auth,
     updateOneExpenseValidation,
     config.mwError,
