@@ -1,4 +1,4 @@
-const { body, query } = require("express-validator");
+const { body, query, param } = require("express-validator");
 
 exports.addNewExpenseValidation = [
   body("amount")
@@ -62,4 +62,14 @@ exports.updateOneExpenseValidation = [
     .withMessage("description must be a string")
     .isLength({ max: 191 })
     .withMessage("description must be less than 191 characters long"),
+];
+
+exports.DeleteOneExpenseValidation = [
+  param("id")
+    .notEmpty()
+    .withMessage("id is required")
+    .isNumeric()
+    .withMessage("id must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("id length must be less than 10 characters long"),
 ];

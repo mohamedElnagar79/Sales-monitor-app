@@ -5,6 +5,7 @@ const {
   addNewExpenseValidation,
   getExpensesValidation,
   updateOneExpenseValidation,
+  DeleteOneExpenseValidation,
 } = require("../validations/daily_expense.validation");
 const config = require("../config/middlewares");
 
@@ -32,6 +33,14 @@ router
     updateOneExpenseValidation,
     config.mwError,
     dailyExpenseController.updateOneExpense
+  );
+router
+  .route("/delete-expense/:id")
+  .delete(
+    config.auth,
+    DeleteOneExpenseValidation,
+    config.mwError,
+    dailyExpenseController.DeleteOneExpense
   );
 
 module.exports = router;

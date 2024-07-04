@@ -141,6 +141,7 @@ exports.calcDailySales = async (req, res, next) => {
       },
       limit,
       offset,
+      order: [["updatedAt", "DESC"]],
       include: {
         model: Product,
         required: false,
@@ -155,6 +156,7 @@ exports.calcDailySales = async (req, res, next) => {
           [Op.between]: [specifiedDate, nextDay],
         },
       },
+      order: [["updatedAt", "DESC"]],
       limit,
       offset,
     });
@@ -167,6 +169,9 @@ exports.calcDailySales = async (req, res, next) => {
       (sum, expense) => sum + parseFloat(expense.amount),
       0
     );
+    dailyExpense.rows.map((outgoing) => {
+      outgoing.description = config.truncateText(outgoing.description, 50);
+    });
 
     console.log("totalAmountPaid ==> ", totalAmountPaid);
     console.log("Daily_expense ==> ", totalDailyExpense);

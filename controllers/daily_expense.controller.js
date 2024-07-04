@@ -90,3 +90,30 @@ exports.updateOneExpense = async (req, res, next) => {
     });
   }
 };
+
+exports.DeleteOneExpense = async (req, res, next) => {
+  const expenseId = +req.params.id;
+  try {
+    const expense = await DailyExpense.findByPk(expenseId);
+    if (expense) {
+      await expense.destroy();
+      return res.status(200).json({
+        status_code: 200,
+        data: null,
+        message: "expense deleted succesfully",
+      });
+    } else {
+      return res.status(404).json({
+        status_code: 404,
+        data: null,
+        message: "expense not found or is already deleted",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
