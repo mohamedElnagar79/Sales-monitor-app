@@ -36,7 +36,7 @@ app.use([
   routes.userRoute,
   routes.productRoute,
   routes.loginRoute,
-  routes.salesRoute,
+  routes.invoiceItemsRoute,
   routes.returnsRoute,
   routes.dailyExpenseRoute,
 ]);

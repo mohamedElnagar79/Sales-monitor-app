@@ -1,6 +1,5 @@
 const { body, check, param, query } = require("express-validator");
 const Product = require("../models/product.model");
-const Sales = require("../models/sales.model");
 
 exports.sellProductsValidation = [
   body("productId")

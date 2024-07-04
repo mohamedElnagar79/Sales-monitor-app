@@ -1,4 +1,4 @@
-const Sales = require("../models/sales.model");
+const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const { Op, Sequelize } = require("sequelize");
 const moment = require("moment");
@@ -6,38 +6,24 @@ const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
 
 exports.sellProduct = async (req, res, next) => {
-  const {
-    quantity,
-    piecePrice,
-    total,
-    amountPaid,
-    remainingBalance,
-    clientName,
-    comments,
-    productId,
-  } = req.body;
+  const { quantity, piecePrice, invoiceId, productId } = req.body;
   try {
-    const newSellObject = await Sales.create({
-      quantity: quantity,
+    const newInvoiceItems = await InvoiceItems.create({
+      quantity,
       piecePrice,
-      amountPaid,
-      total,
-      remainingBalance,
-      clientName,
-      comments,
+      invoiceId,
       productId,
     });
-    if (newSellObject) {
+    if (newInvoiceItems) {
       const product = await Product.findByPk(productId);
       const newStock = product.dataValues.stock - quantity;
-      console.log("newStock", product.dataValues);
       await product.update({ stock: newStock });
       return res.status(200).json({
         status_code: 200,
         data: null,
         message: "done",
       });
-    } else throw new Error("error while creating sell");
+    } else throw new Error("error while creating invoice item");
   } catch (error) {
     return res.status(500).json({
       status_code: 500,

@@ -1,10 +1,18 @@
-const User = require("../models/user.model");
-const Sales = require("../models/sales.model");
+// const User = require("../models/user.model");
+const invoice_items = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const Returns = require("../models/returns.model");
+const Clients = require("../models/clients.model");
+const Invoices = require("../models/invoice.model");
 
-Product.hasMany(Sales);
-Sales.belongsTo(Product);
+Product.hasMany(invoice_items);
+invoice_items.belongsTo(Product);
 
-Sales.hasMany(Returns);
-Returns.belongsTo(Sales);
+invoice_items.hasMany(Returns);
+Returns.belongsTo(invoice_items);
+
+Invoices.hasMany(invoice_items);
+invoice_items.belongsTo(Invoices);
+
+Clients.hasMany(Invoices);
+Invoices.belongsTo(Clients);
