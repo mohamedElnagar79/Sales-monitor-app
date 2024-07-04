@@ -4,6 +4,7 @@ const dailyExpenseController = require("../controllers/daily_expense.controller"
 const {
   addNewExpenseValidation,
   getExpensesValidation,
+  updateOneExpenseValidation,
 } = require("../validations/daily_expense.validation");
 const config = require("../config/middlewares");
 
@@ -22,6 +23,15 @@ router
     getExpensesValidation,
     config.mwError,
     dailyExpenseController.getAllExpenses
+  );
+
+router
+  .route("/update-expenses/:id")
+  .get(
+    config.auth,
+    updateOneExpenseValidation,
+    config.mwError,
+    dailyExpenseController.updateOneExpense
   );
 
 module.exports = router;

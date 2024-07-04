@@ -43,3 +43,23 @@ exports.getExpensesValidation = [
     .isLength({ min: 0, max: 10 })
     .withMessage("rows length must be less than 10 characters long"),
 ];
+exports.updateOneExpenseValidation = [
+  body("amount")
+    .optional()
+    .isNumeric()
+    .withMessage("amount must be a valid number")
+    .isLength({ max: 10 })
+    .withMessage("amount must be less than 10 characters long"),
+  body("expenseName")
+    .optional()
+    .isString()
+    .withMessage("expenseName must be a string")
+    .isLength({ max: 191 })
+    .withMessage("expenseName must be less than 191 characters long"),
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("description must be a string")
+    .isLength({ max: 191 })
+    .withMessage("description must be less than 191 characters long"),
+];
