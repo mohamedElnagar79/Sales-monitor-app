@@ -5,6 +5,13 @@ const { Op, Sequelize } = require("sequelize");
 exports.createNewProduct = async (req, res) => {
   const { name, price, soldPrice, stock, description } = req.body;
   try {
+    if (req.role != "admin") {
+      res.status(403).json({
+        status_code: 403,
+        data: null,
+        message: "you are forbidden to update this resources",
+      });
+    }
     const newProduct = await Product.create({
       name,
       price,
@@ -30,6 +37,13 @@ exports.createNewProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
+    if (req.role != "admin") {
+      res.status(403).json({
+        status_code: 403,
+        data: null,
+        message: "you are forbidden to update this resources",
+      });
+    }
     let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
@@ -85,6 +99,13 @@ exports.updateOneProduct = async (req, res, next) => {
   const { name, price, soldPrice, stock, description } = req.body;
   const productId = +req.params.id;
   try {
+    if (req.role != "admin") {
+      res.status(403).json({
+        status_code: 403,
+        data: null,
+        message: "you are forbidden to update this resources",
+      });
+    }
     const product = await Product.findByPk(productId);
     if (product) {
       await product.update({
@@ -118,6 +139,13 @@ exports.updateOneProduct = async (req, res, next) => {
 exports.DeleteOneProduct = async (req, res, next) => {
   const productId = +req.params.id;
   try {
+    if (req.role != "admin") {
+      res.status(403).json({
+        status_code: 403,
+        data: null,
+        message: "you are forbidden to update this resources",
+      });
+    }
     const product = await Product.findByPk(productId);
     if (product) {
       await product.destroy();

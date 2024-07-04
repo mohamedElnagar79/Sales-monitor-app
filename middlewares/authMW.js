@@ -15,6 +15,7 @@ module.exports = (req, res, next) => {
     req.name = decoded.name;
     req.email = decoded.email;
     req.avatar = decoded.avatar;
+    req.role = decoded.role;
   } catch (error) {
     error.status = 401;
     error.message = "You are not authorized to access this resource";
