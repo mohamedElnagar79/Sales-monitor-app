@@ -5,14 +5,23 @@ const moment = require("moment");
 const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
 
-exports.sellProduct = async (req, res, next) => {
-  const { quantity, piecePrice, invoiceId, productId } = req.body;
+exports.createNewInvoice = async (req, res, next) => {
+  const {
+    piecePrice,
+    quantity,
+    productId,
+    total,
+    amountPaid,
+    remainingBalance,
+    comments,
+    invoiceId,
+  } = req.body;
   try {
     const newInvoiceItems = await InvoiceItems.create({
+      productId,
       quantity,
       piecePrice,
       invoiceId,
-      productId,
     });
     if (newInvoiceItems) {
       const product = await Product.findByPk(productId);
