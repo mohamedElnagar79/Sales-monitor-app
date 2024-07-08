@@ -1,44 +1,42 @@
 const { body, check, param, query } = require("express-validator");
 const Product = require("../models/product.model");
+const Clients = require("../models/clients.model");
 
 exports.sellProductsValidation = [
-  body("productId")
-    .notEmpty()
-    .withMessage("productId is required")
+  body("clientName")
+    .optional()
+    .isString()
+    .withMessage("clientName must be a string")
+    .isLength({ max: 191 })
+    .withMessage("clientName must be less than 191 char"),
+  body("phone")
+    .optional()
+    .isString()
+    .withMessage("phone must be a string")
+    .isLength({ max: 11 })
+    .withMessage("phone must be less than 11 char"),
+  body("clientId")
+    .optional()
     .isNumeric()
-    .withMessage("productId must be a number")
+    .withMessage("clientId must be a number")
     .isLength({ max: 10 })
-    .withMessage("productId must be less than 10 nums long"),
-  check("productId").custom((value) => {
-    return Product.findOne({ where: { id: value } }).then((product) => {
-      console.log("helllo iam here");
-      if (!product || product.dataValues.Stock == 0) {
-        return Promise.reject("this product not found or out of Stock");
-      }
-    });
-  }),
+    .withMessage("clientId must be less than 10 char"),
+  check("clientId")
+    .optional()
+    .custom((value) => {
+      return Clients.findOne({ where: { id: value } }).then((client) => {
+        if (!client) {
+          return Promise.reject("client not found! create new one");
+        }
+      });
+    }),
+  body("comments")
+    .optional()
+    .isString()
+    .withMessage("comments must be a string")
+    .isLength({ max: 191 })
+    .withMessage("comments must be less than 191 char"),
 
-  body("quantity")
-    .notEmpty()
-    .withMessage("quantity is required")
-    .isNumeric()
-    .withMessage("quantity must be a number")
-    .isLength({ max: 10 })
-    .withMessage("quantity must be less than 10 nums long"),
-  body("piecePrice")
-    .notEmpty()
-    .withMessage("piecePrice is required")
-    .isNumeric()
-    .withMessage("piecePrice must be a number")
-    .isLength({ max: 10 })
-    .withMessage("piecePrice must be less than 10 nums long"),
-  body("total")
-    .notEmpty()
-    .withMessage("total is required")
-    .isNumeric()
-    .withMessage("total must be a number")
-    .isLength({ max: 10 })
-    .withMessage("total must be less than 10 nums long"),
   body("amountPaid")
     .notEmpty()
     .withMessage("amountPaid is required")
@@ -46,27 +44,51 @@ exports.sellProductsValidation = [
     .withMessage("amountPaid must be a number")
     .isLength({ max: 10 })
     .withMessage("amountPaid must be less than 10 nums long"),
-  body("remainingBalance")
+  body("newInvoiceItems")
     .notEmpty()
-    .withMessage("remainingBalance is required")
+    .withMessage("newInvoiceItems is required")
+    .isArray()
+    .withMessage("newInvoiceItems must be a array of objects"),
+  body("newInvoiceItems.*.productId")
+    .notEmpty()
+    .withMessage("each newInvoiceItems must have productId")
     .isNumeric()
-    .withMessage("remainingBalance must be a number")
+    .withMessage("newInvoiceItems productId must be a number")
     .isLength({ max: 10 })
-    .withMessage("remainingBalance must be less than 10 nums long"),
-  body("clientName")
+    .withMessage("newInvoiceItems productId must be less than 10 nums long"),
+  check("newInvoiceItems.*.productId").custom((value, req) => {
+    const itemIndex = req.req.body.newInvoiceItems.findIndex(
+      (item) => item.productId === value
+    );
+    if (itemIndex === -1) {
+      return Promise.reject("product Id not found in the request body!");
+    }
+    const currentQuantity = req.req.body.newInvoiceItems[itemIndex].quantity;
+    return Product.findOne({ where: { id: value } }).then((product) => {
+      if (!product) {
+        return Promise.reject("product Id not found!");
+      }
+      if (product.stock < currentQuantity) {
+        return Promise.reject(
+          "there is no enough quantity exist in this product"
+        );
+      }
+    });
+  }),
+  body("newInvoiceItems.*.quantity")
     .notEmpty()
-    .withMessage("clientName is required")
-    .isString()
-    .withMessage("clientName must be a string")
-    .isLength({ max: 191 })
-    .withMessage("clientName must be less than 191 char long"),
-  body("comments")
+    .withMessage("each newInvoiceItems must have quantity")
+    .isNumeric()
+    .withMessage("newInvoiceItems quantity must be a number")
+    .isLength({ max: 10 })
+    .withMessage("newInvoiceItems quantity must be less than 10 nums long"),
+  body("newInvoiceItems.*.piecePrice")
     .notEmpty()
-    .withMessage("comments is required")
-    .isString()
-    .withMessage("comments must be a string")
-    .isLength({ max: 191 })
-    .withMessage("comments must be less than 10 char long"),
+    .withMessage("each newInvoiceItems must have piecePrice")
+    .isNumeric()
+    .withMessage("newInvoiceItems piecePrice must be a number")
+    .isLength({ max: 10 })
+    .withMessage("newInvoiceItems piecePrice must be less than 10 nums long"),
 ];
 
 exports.getLastSalesValidation = [

@@ -5,13 +5,14 @@ const { Op, Sequelize } = require("sequelize");
 exports.createNewProduct = async (req, res) => {
   const { name, price, soldPrice, stock, description } = req.body;
   try {
-    if (req.role != "admin") {
-      res.status(403).json({
-        status_code: 403,
-        data: null,
-        message: "you are forbidden to update this resources",
-      });
-    }
+    // if (req.role != "admin") {
+    //   console.log("req.role   ", req.role);
+    //   res.status(403).json({
+    //     status_code: 403,
+    //     data: null,
+    //     message: "you are forbidden to update this resources",
+    //   });
+    // }
     const newProduct = await Product.create({
       name,
       price,
@@ -99,13 +100,13 @@ exports.updateOneProduct = async (req, res, next) => {
   const { name, price, soldPrice, stock, description } = req.body;
   const productId = +req.params.id;
   try {
-    if (req.role != "admin") {
-      res.status(403).json({
-        status_code: 403,
-        data: null,
-        message: "you are forbidden to update this resources",
-      });
-    }
+    // if (req.role != "admin") {
+    //   res.status(403).json({
+    //     status_code: 403,
+    //     data: null,
+    //     message: "you are forbidden to update this resources",
+    //   });
+    // }
     const product = await Product.findByPk(productId);
     if (product) {
       await product.update({
@@ -139,13 +140,13 @@ exports.updateOneProduct = async (req, res, next) => {
 exports.DeleteOneProduct = async (req, res, next) => {
   const productId = +req.params.id;
   try {
-    if (req.role != "admin") {
-      res.status(403).json({
-        status_code: 403,
-        data: null,
-        message: "you are forbidden to update this resources",
-      });
-    }
+    // if (req.role != "admin") {
+    //   res.status(403).json({
+    //     status_code: 403,
+    //     data: null,
+    //     message: "you are forbidden to update this resources",
+    //   });
+    // }
     const product = await Product.findByPk(productId);
     if (product) {
       await product.destroy();

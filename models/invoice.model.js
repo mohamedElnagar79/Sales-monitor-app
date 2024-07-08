@@ -22,7 +22,7 @@ const Invoices = sequelize.define("invoices", {
   },
   comments: {
     type: Sequelize.STRING,
-    allowNull: false,
+    allowNull: true,
     default: " ",
   },
 });

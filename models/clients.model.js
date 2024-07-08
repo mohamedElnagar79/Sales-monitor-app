@@ -33,6 +33,9 @@ const Clients = sequelize.define(
   },
   {
     indexes: [{ unique: true, fields: ["name"] }],
+  },
+  {
+    indexes: [{ unique: true, fields: ["phone"] }],
   }
 );
 

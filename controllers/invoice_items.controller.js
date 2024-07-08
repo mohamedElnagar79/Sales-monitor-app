@@ -4,35 +4,70 @@ const { Op, Sequelize } = require("sequelize");
 const moment = require("moment");
 const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
+const Clients = require("../models/clients.model");
+const Invoices = require("../models/invoice.model");
 
 exports.createNewInvoice = async (req, res, next) => {
-  const {
-    piecePrice,
-    quantity,
-    productId,
-    total,
-    amountPaid,
-    remainingBalance,
-    comments,
-    invoiceId,
-  } = req.body;
+  const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
+  let clientId = req.body.clientId;
+  let invoiceId;
+  let total = 0;
+  let remainingBalance = 0;
+
   try {
-    const newInvoiceItems = await InvoiceItems.create({
-      productId,
-      quantity,
-      piecePrice,
-      invoiceId,
-    });
-    if (newInvoiceItems) {
-      const product = await Product.findByPk(productId);
-      const newStock = product.dataValues.stock - quantity;
-      await product.update({ stock: newStock });
-      return res.status(200).json({
-        status_code: 200,
-        data: null,
-        message: "done",
+    // create new client or get it
+    if (clientName) {
+      const client = await Clients.create({
+        name: clientName,
+        phone: phone,
       });
-    } else throw new Error("error while creating invoice item");
+      clientId = client.dataValues.id;
+    }
+    console.log("===> ", clientId, clientName);
+    if (!clientName && !clientId) {
+      return res.status(400).json({
+        status_code: 400,
+        data: null,
+        message: "please choose client!",
+      });
+    }
+    // create new invoice without calc total and remaining
+    const newInvoice = await Invoices.create({
+      clientId,
+      total: 0,
+      amountPaid,
+      remainingBalance: 0,
+      comments,
+    });
+    invoiceId = newInvoice.dataValues.id;
+    // loop at Invoice Item and create one
+    for (const item of newInvoiceItems) {
+      const newInvoiceItem = await InvoiceItems.create({
+        productId: item.productId,
+        quantity: item.quantity,
+        piecePrice: item.piecePrice,
+        invoiceId: invoiceId,
+      });
+      const product = await Product.findByPk(item.productId);
+      const stock = product.stock - item.quantity;
+      await product.update({
+        stock,
+      });
+      const itemTotalPrice =
+        newInvoiceItem.quantity * newInvoiceItem.piecePrice;
+      total += itemTotalPrice;
+    }
+    // calc remaining balance then update invoice
+    remainingBalance = total - amountPaid;
+    await newInvoice.update({
+      total,
+      remainingBalance,
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: newInvoice,
+      message: "success",
+    });
   } catch (error) {
     return res.status(500).json({
       status_code: 500,
