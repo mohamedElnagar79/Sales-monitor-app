@@ -39,6 +39,7 @@ app.use([
   routes.invoiceItemsRoute,
   routes.returnsRoute,
   routes.dailyExpenseRoute,
+  routes.ClientsRoute,
 ]);
 
 app.use("/public", express.static(path.join(__dirname, "public")));
