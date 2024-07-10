@@ -17,6 +17,7 @@ const Clients = sequelize.define(
     phone: {
       type: Sequelize.STRING,
       allowNull: true,
+      default: "",
     },
     address: {
       type: Sequelize.STRING,
