@@ -15,6 +15,16 @@ exports.sellProductsValidation = [
     .withMessage("phone must be a string")
     .isLength({ max: 11 })
     .withMessage("phone must be less than 11 char"),
+  check("phone")
+    .optional()
+    .custom(async (value) => {
+      const client = await Clients.findOne({
+        where: { phone: value },
+      });
+      if (client) {
+        return Promise.reject("phone is already exist");
+      }
+    }),
   body("clientId")
     .optional()
     .isNumeric()
