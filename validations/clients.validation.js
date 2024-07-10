@@ -5,7 +5,7 @@ exports.getClientsListValidation = [
     .optional()
     .isString()
     .withMessage("phone must be string")
-    .isLength({ min: 11, max: 11 })
+    .isLength({ min: 1, max: 11 })
     .withMessage("phone length must be 11 characters long"),
   query("name")
     .optional()
