@@ -7,7 +7,7 @@ const {
 } = require("../validations/clients.validation");
 
 router
-  .route("clients-list")
+  .route("/clients-list")
   .get(
     config.auth,
     getClientsListValidation,
