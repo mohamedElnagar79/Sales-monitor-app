@@ -5,6 +5,7 @@ const invoiceItemsRoute = require("../routes/invoice_items.route");
 const returnsRoute = require("../routes/returns.route");
 const dailyExpenseRoute = require("../routes/daily_expense.route");
 const ClientsRoute = require("../routes/clients.route");
+const invoiceRoute = require("../routes/invoice.route");
 module.exports = {
   userRoute,
   productRoute,
@@ -13,4 +14,5 @@ module.exports = {
   returnsRoute,
   dailyExpenseRoute,
   ClientsRoute,
+  invoiceRoute,
 };
