@@ -16,23 +16,22 @@ exports.getInvoices = async (req, res) => {
     const invoices = await Invoices.findAll({
       attributes: [
         "id",
-        // [Sequelize.col("Clients.id"), "clientId"],
-        // [Sequelize.col("Clients.name"), "clientName"],
+        [Sequelize.col("client.id"), "clientId"],
+        [Sequelize.col("client.name"), "clientName"],
         "total",
         "amountPaid",
         "remainingBalance",
         "comments",
         "createdAt",
       ],
-      where: whereClause,
       include: {
         model: Clients,
         required: false,
-        // attributes: [],
+        attributes: [],
       },
       order: [["createdAt", "DESC"]],
     });
-    invoices.rows.map((item) => {
+    invoices.map((item) => {
       item.dataValues.createdAt = config.formatDate(item.dataValues.createdAt);
     });
 
