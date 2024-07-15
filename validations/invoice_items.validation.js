@@ -129,3 +129,13 @@ exports.calcDaysValidation = [
     .isLength({ min: 0, max: 10 })
     .withMessage("rows length must be less than 10 characters long"),
 ];
+
+exports.validateParamId = [
+  param("id")
+    .notEmpty()
+    .withMessage("id is required")
+    .isNumeric()
+    .withMessage("id must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("id length must be less than 10 characters long"),
+];

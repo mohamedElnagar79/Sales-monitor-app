@@ -1,6 +1,6 @@
 const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
-const { Op, Sequelize } = require("sequelize");
+const { Op, Sequelize, where } = require("sequelize");
 const moment = require("moment");
 const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
@@ -66,6 +66,42 @@ exports.createNewInvoice = async (req, res, next) => {
     return res.status(200).json({
       status_code: 200,
       data: newInvoice,
+      message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.getInvoiceItems = async (req, res, next) => {
+  const invoiceId = req.params.id;
+  try {
+    const invoiceItems = await InvoiceItems.findAll({
+      where: {
+        invoiceId,
+      },
+      attributes: [
+        "id",
+        "piecePrice",
+        "quantity",
+        "createdAt",
+        [Sequelize.col("product.name"), "productName"],
+      ],
+      include: {
+        model: Product,
+        attributes: [],
+      },
+    });
+    invoiceItems.map((item) => {
+      item.dataValues.createdAt = config.formatDate(item.dataValues.createdAt);
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: invoiceItems,
       message: "success",
     });
   } catch (error) {

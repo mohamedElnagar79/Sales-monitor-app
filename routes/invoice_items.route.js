@@ -4,6 +4,7 @@ const config = require("../config/middlewares");
 const invoice_itemsController = require("../controllers/invoice_items.controller");
 const {
   sellProductsValidation,
+  validateParamId,
   //   getLastSalesValidation,
   //   calcDaysValidation,
 } = require("../validations/invoice_items.validation");
@@ -15,6 +16,15 @@ router
     sellProductsValidation,
     config.mwError,
     invoice_itemsController.createNewInvoice
+  );
+
+router
+  .route("/invoice-items/:id")
+  .get(
+    config.auth,
+    validateParamId,
+    config.mwError,
+    invoice_itemsController.getInvoiceItems
   );
 
 // router
