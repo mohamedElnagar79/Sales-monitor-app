@@ -89,6 +89,7 @@ exports.getInvoiceItems = async (req, res, next) => {
         "piecePrice",
         "quantity",
         "createdAt",
+        "invoiceId",
         [Sequelize.col("product.name"), "productName"],
       ],
       include: {
