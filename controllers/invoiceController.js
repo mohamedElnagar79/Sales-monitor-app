@@ -4,7 +4,7 @@ const config = require("../config/middlewares");
 const Invoices = require("../models/invoice.model");
 const Clients = require("../models/clients.model");
 const InvoiceItems = require("../models/invoice_items.model");
-
+const Product = require("../models/product.model");
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
@@ -59,6 +59,50 @@ exports.getInvoices = async (req, res) => {
     return res.status(200).json({
       status_code: 200,
       data: invoices,
+      message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.getOneInvoiceById = async (req, res) => {
+  const invoiceId = req.params.id;
+  try {
+    const invoice = await Invoices.findByPk(invoiceId, {
+      attributes: [
+        "id",
+        "amountPaid",
+        "remainingBalance",
+        "total",
+        [Sequelize.col("client.name"), "clientName"],
+        [Sequelize.col("client.id"), "clientId"],
+      ],
+      include: [
+        {
+          model: Clients,
+          required: false,
+          attributes: [],
+        },
+        {
+          model: InvoiceItems,
+          required: false,
+          attributes: ["id", "piecePrice", "quantity", "productId"],
+          include: {
+            model: Product,
+            required: false,
+            attributes: ["name"],
+          },
+        },
+      ],
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: invoice,
       message: "success",
     });
   } catch (error) {

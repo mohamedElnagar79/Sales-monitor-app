@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const config = require("../config/middlewares");
 const invoiceController = require("../controllers/invoiceController");
-const { getInvoicesValidation } = require("../validations/invoice.validation");
+const {
+  getInvoicesValidation,
+  validateParamId,
+} = require("../validations/invoice.validation");
 router
   .route("/invoices")
   .get(
@@ -12,4 +15,12 @@ router
     invoiceController.getInvoices
   );
 
+router
+  .route("/invoice/:id")
+  .get(
+    config.auth,
+    validateParamId,
+    config.mwError,
+    invoiceController.getOneInvoiceById
+  );
 module.exports = router;

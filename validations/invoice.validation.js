@@ -1,4 +1,4 @@
-const { query } = require("express-validator");
+const { query, param } = require("express-validator");
 const moment = require("moment");
 
 exports.getInvoicesValidation = [
@@ -14,4 +14,13 @@ exports.getInvoicesValidation = [
       }
       return true;
     }),
+];
+exports.validateParamId = [
+  param("id")
+    .notEmpty()
+    .withMessage("id is required")
+    .isNumeric()
+    .withMessage("id must be anumber")
+    .isLength({ min: 0, max: 10 })
+    .withMessage("id length must be less than 10 characters long"),
 ];
