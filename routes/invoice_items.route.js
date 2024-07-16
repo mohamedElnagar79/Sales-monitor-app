@@ -26,6 +26,9 @@ router
     config.mwError,
     invoice_itemsController.getInvoiceItems
   );
+router
+  .route("/invoice-items")
+  .put(config.auth, invoice_itemsController.updateInvoiceItems);
 
 // router
 //   .route("/get-last-sales")
