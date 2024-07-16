@@ -81,6 +81,7 @@ exports.getOneInvoiceById = async (req, res) => {
         "total",
         [Sequelize.col("client.name"), "clientName"],
         [Sequelize.col("client.id"), "clientId"],
+        [Sequelize.col("client.phone"), "phone"],
       ],
       include: [
         {
@@ -100,6 +101,12 @@ exports.getOneInvoiceById = async (req, res) => {
         },
       ],
     });
+    if (invoice) {
+      invoice.invoice_items.map((item) => {
+        item.dataValues.productName = item.dataValues.product.name;
+        delete item.dataValues.product;
+      });
+    }
     return res.status(200).json({
       status_code: 200,
       data: invoice,
