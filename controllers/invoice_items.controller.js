@@ -6,6 +6,7 @@ const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
 const Clients = require("../models/clients.model");
 const Invoices = require("../models/invoice.model");
+const IvoicePayments = require("../models/invoice_payments.model");
 
 exports.createNewInvoice = async (req, res, next) => {
   const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
@@ -62,6 +63,14 @@ exports.createNewInvoice = async (req, res, next) => {
     await newInvoice.update({
       total,
       remainingBalance,
+    });
+    await IvoicePayments.create({
+      total,
+      amountPaid,
+      remaining: remainingBalance,
+      comments: comments ? comments : "",
+      clientId,
+      invoiceId,
     });
     return res.status(200).json({
       status_code: 200,

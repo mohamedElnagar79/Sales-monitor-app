@@ -8,15 +8,15 @@ const IvoicePayments = sequelize.define("ivoice_payments", {
     allowNull: false,
     primaryKey: true,
   },
-  oldRemaining: {
+  total: {
     type: Sequelize.INTEGER,
-    allowNull: false,
+    allowNull: true,
   },
   amountPaid: {
     type: Sequelize.INTEGER,
     allowNull: false,
   },
-  newRemaining: {
+  remaining: {
     type: Sequelize.INTEGER,
     allowNull: false,
   },
