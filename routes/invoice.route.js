@@ -23,4 +23,14 @@ router
     config.mwError,
     invoiceController.getOneInvoiceById
   );
+// get invoice payments
+router
+  .route("/invoice-payments/:id")
+  .get(
+    config.auth,
+    validateParamId,
+    config.mwError,
+    invoiceController.getInvoicePayments
+  );
+
 module.exports = router;

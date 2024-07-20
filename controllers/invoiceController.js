@@ -5,6 +5,8 @@ const Invoices = require("../models/invoice.model");
 const Clients = require("../models/clients.model");
 const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
+const IvoicePayments = require("../models/invoice_payments.model");
+
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
@@ -110,6 +112,35 @@ exports.getOneInvoiceById = async (req, res) => {
     return res.status(200).json({
       status_code: 200,
       data: invoice,
+      message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.getInvoicePayments = async (req, res) => {
+  const invoiceId = req.params.id;
+  try {
+    const payments = await IvoicePayments.findAll({
+      attributes: ["id", "total", "amountPaid", "remaining", "createdAt"],
+      where: {
+        invoiceId,
+      },
+    });
+    payments.map((item) => {
+      item.dataValues.createdAt = moment(item.dataValues.createdAt).format(
+        "DD/MM/YYYY"
+      );
+    });
+
+    return res.status(200).json({
+      status_code: 200,
+      data: payments,
       message: "success",
     });
   } catch (error) {
