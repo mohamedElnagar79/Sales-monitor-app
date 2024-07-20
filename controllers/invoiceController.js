@@ -126,6 +126,7 @@ exports.getOneInvoiceById = async (req, res) => {
 exports.getInvoicePayments = async (req, res) => {
   const invoiceId = req.params.id;
   try {
+    let totalOfOldPaid = 0;
     const payments = await IvoicePayments.findAll({
       attributes: ["id", "total", "amountPaid", "remaining", "createdAt"],
       where: {
@@ -133,6 +134,7 @@ exports.getInvoicePayments = async (req, res) => {
       },
     });
     payments.map((item) => {
+      totalOfOldPaid += item.dataValues.amountPaid;
       item.dataValues.createdAt = moment(item.dataValues.createdAt).format(
         "DD/MM/YYYY"
       );
@@ -140,7 +142,10 @@ exports.getInvoicePayments = async (req, res) => {
 
     return res.status(200).json({
       status_code: 200,
-      data: payments,
+      data: {
+        totalOfOldPaid,
+        payments,
+      },
       message: "success",
     });
   } catch (error) {
