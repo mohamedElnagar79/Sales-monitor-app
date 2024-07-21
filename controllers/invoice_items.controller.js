@@ -273,27 +273,3 @@ exports.calcDailySales = async (req, res, next) => {
     });
   }
 };
-
-exports.updateInvoiceItems = async (req, res) => {
-  try {
-    console.log("heloooo");
-    const { invoiceId, newInvoiceItems } = req.body;
-    const invoiceItems = await InvoiceItems.findAll({
-      where: {
-        invoiceId,
-      },
-    });
-    console.log("invoiceItems ", invoiceItems);
-    return res.status(200).json({
-      status_code: 200,
-      data: null,
-      message: "updated successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status_code: 500,
-      data: null,
-      message: error.message,
-    });
-  }
-};

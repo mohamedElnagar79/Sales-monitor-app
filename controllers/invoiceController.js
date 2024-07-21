@@ -156,3 +156,54 @@ exports.getInvoicePayments = async (req, res) => {
     });
   }
 };
+
+exports.updateInvoice = async (req, res) => {
+  try {
+    const { clientId, invoiceId, invoice, newInvoiceItems, newPayments } =
+      req.body;
+    const invoiceItems = await InvoiceItems.findAll({
+      where: {
+        invoiceId,
+      },
+    });
+
+    for (const payment of newPayments) {
+      try {
+        await IvoicePayments.create({
+          total: payment.total,
+          amountPaid: payment.amountPaid,
+          remaining: payment.remaining,
+          clientId,
+          invoiceId,
+        });
+      } catch (error) {
+        console.error("Error creating payment:", error);
+      }
+    }
+
+    await Invoices.update(
+      {
+        amountPaid: invoice.amountPaid,
+        remainingBalance: invoice.remainder,
+      },
+      {
+        where: {
+          id: invoiceId, // Update invoice with matching ID
+        },
+      }
+    );
+
+    console.log("invoiceItems ", invoiceItems);
+    return res.status(200).json({
+      status_code: 200,
+      data: null,
+      message: "updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};

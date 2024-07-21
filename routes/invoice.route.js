@@ -33,4 +33,6 @@ router
     invoiceController.getInvoicePayments
   );
 
+router.route("/invoice").put(config.auth, invoiceController.updateInvoice);
+
 module.exports = router;
