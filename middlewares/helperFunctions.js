@@ -22,3 +22,10 @@ exports.formatDate = (formattedDate) => {
     .replace(",", "");
   return formattedDate;
 };
+
+exports.truncateText = (text, length) => {
+  if (text.length <= length) {
+    return text;
+  }
+  return text.substr(0, length);
+};

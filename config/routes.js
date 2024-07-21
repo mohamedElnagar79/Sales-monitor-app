@@ -1,14 +1,18 @@
 const userRoute = require("../routes/user.route");
 const productRoute = require("../routes/product.route");
 const loginRoute = require("../routes/login.route");
-const salesRoute = require("../routes/sales.route");
+const invoiceItemsRoute = require("../routes/invoice_items.route");
 const returnsRoute = require("../routes/returns.route");
 const dailyExpenseRoute = require("../routes/daily_expense.route");
+const ClientsRoute = require("../routes/clients.route");
+const invoiceRoute = require("../routes/invoice.route");
 module.exports = {
   userRoute,
   productRoute,
   loginRoute,
-  salesRoute,
+  invoiceItemsRoute,
   returnsRoute,
   dailyExpenseRoute,
+  ClientsRoute,
+  invoiceRoute,
 };
