@@ -7,6 +7,7 @@ const DailyExpense = require("../models/Daily_expense.model");
 const Clients = require("../models/clients.model");
 const Invoices = require("../models/invoice.model");
 const IvoicePayments = require("../models/invoice_payments.model");
+const Returns = require("../models/returns.model");
 
 exports.createNewInvoice = async (req, res, next) => {
   const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
@@ -264,6 +265,109 @@ exports.calcDailySales = async (req, res, next) => {
         totalExistMoney,
       },
       message: "done",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.deleteInvoiceItem = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    let returnedMoney = 0;
+    const invoiceItem = await InvoiceItems.findByPk(id);
+    if (invoiceItem) {
+      console.log("invoice item ", invoiceItem.dataValues);
+      // delete this invoice item first
+      const productId = invoiceItem.dataValues.productId;
+      await invoiceItem.destroy();
+      // increase quantity of product or create new one if it deleted
+      const product = await Product.findByPk(productId);
+      if (product) {
+        const newStock =
+          product.dataValues.stock + invoiceItem.dataValues.quantity;
+        product.update({
+          stock: newStock,
+        });
+      } else {
+        await Product.create({
+          name: product.dataValues.name,
+          stock: invoiceItem.dataValues.quantity,
+          price: invoiceItem.dataValues.piecePrice,
+          soldPrice: invoiceItem.dataValues.piecePrice,
+        });
+      }
+      // create new return
+      await Returns.create({
+        quantity: invoiceItem.dataValues.quantity,
+        productId: invoiceItem.dataValues.productId,
+      });
+      const invoice_items = await InvoiceItems.findAll({
+        where: {
+          invoiceId: invoiceItem.dataValues.invoiceId,
+        },
+      });
+      const invoice = await Invoices.findByPk(invoiceItem.dataValues.invoiceId);
+      if (invoice) {
+        if (invoice_items.length > 0) {
+          console.log("there is another items ===>>>", invoice_items);
+          let total = 0;
+          console.log("invoiceItems ", invoice_items);
+          for (const item of invoice_items) {
+            const itemTotalPrice = item.quantity * item.piecePrice;
+            total += itemTotalPrice;
+          }
+          if (total >= invoice.dataValues.amountPaid) {
+            // now client will not take money
+            const remainingBalance = total - invoice.dataValues.amountPaid;
+            await invoice.update({
+              total,
+              remainingBalance,
+            });
+          } else {
+            // now user will take money and we will create new expense as return
+            returnedMoney = invoice.dataValues.amountPaid - total;
+            await invoice.update({
+              total,
+              remainingBalance: 0,
+              amountPaid: total,
+            });
+          }
+        } else {
+          console.log("there is not other items ");
+
+          // if not it means that this is only one check here to the invoice and calc if remainder and returned money or not
+          // if user paid thie invoice he will take returnedMoney and delete invoice and create expense
+          returnedMoney = invoice.dataValues.amountPaid;
+          await invoice.destroy();
+          if (returnedMoney != 0) {
+            await DailyExpense.create({
+              amount: returnedMoney,
+              expenseName: "مرتجع",
+              description: product.dataValues.name,
+            });
+          }
+        }
+      }
+
+      // create deaily espense if user will take remainer
+      // i will get invoice items and calc invoice agian
+    } else {
+      return res.status(404).json({
+        status_code: 404,
+        data: null,
+        message: "item not found or is already deleted",
+      });
+    }
+
+    return res.status(200).json({
+      status_code: 200,
+      data: returnedMoney,
+      message: "item deleted succesfully",
     });
   } catch (error) {
     return res.status(500).json({

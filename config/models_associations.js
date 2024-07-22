@@ -8,8 +8,8 @@ const IvoicePayments = require("../models/invoice_payments.model");
 Product.hasMany(invoice_items);
 invoice_items.belongsTo(Product);
 
-invoice_items.hasMany(Returns);
-Returns.belongsTo(invoice_items);
+Product.hasMany(Returns);
+Returns.belongsTo(Product);
 
 Invoices.hasMany(invoice_items);
 invoice_items.belongsTo(Invoices);
