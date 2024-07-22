@@ -26,6 +26,14 @@ router
     config.mwError,
     invoice_itemsController.getInvoiceItems
   );
+router
+  .route("/invoice-item/:id")
+  .delete(
+    config.auth,
+    validateParamId,
+    config.mwError,
+    invoice_itemsController.deleteInvoiceItem
+  );
 
 // router
 //   .route("/get-last-sales")
