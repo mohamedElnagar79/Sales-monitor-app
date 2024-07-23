@@ -7,7 +7,6 @@ const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
-const Product = require("../models/product.model");
 
 exports.getInvoices = async (req, res) => {
   try {
@@ -174,84 +173,83 @@ exports.updateInvoice = async (req, res) => {
       req.body;
 
     for (const invoiceItem of updatedinvoiceItems) {
-      console.log("invoiceitems ", invoiceItem);
-      const item = await InvoiceItems.findByPk(invoiceItem.id);
-      const oldquantity = item.dataValues.quantity;
-      await item.update({
-        quantity: invoiceItem.quantity,
-        piecePrice: invoiceItem.piecePrice,
-      });
-
-      const product = await Product.findByPk(item.dataValues.productId);
-      if (product != null) {
-        const oldStock = product.dataValues.stock;
-        if (oldquantity < invoiceItem.quantity) {
-          // will decrease product stock client increase quantity
-          const newQuantity = invoiceItem.quantity - oldquantity;
-          const newStock = oldStock - newQuantity;
-          await product.update({
-            stock: newStock,
-          });
-        }
-        if (oldquantity > invoiceItem.quantity) {
-          // will increase product stock because user add return now
-          // add new return
-
-          const newQuantity = oldquantity - invoiceItem.quantity;
-          const newStock = oldStock + newQuantity;
-          await product.update({
-            stock: newStock,
-          });
-          // create new return
-          await Returns.create({
-            quantity: newQuantity,
-            productId: invoiceItem.productId,
-          });
-        }
-        const invoice_items = await InvoiceItems.findAll({
-          where: {
-            invoiceId: invoiceItem.dataValues.invoiceId,
-          },
+      try {
+        console.log("invoiceitems ", invoiceItem);
+        const item = await InvoiceItems.findByPk(invoiceItem.id);
+        const oldquantity = item.dataValues.quantity;
+        await item.update({
+          quantity: invoiceItem.quantity,
+          piecePrice: invoiceItem.piecePrice,
         });
-        const invoice = await Invoices.findByPk(
-          invoiceItem.dataValues.invoiceId
-        );
-        if (invoice) {
-          if (invoice_items.length > 0) {
-            console.log("there is another items ===>>>", invoice_items);
-            let total = 0;
-            console.log("invoiceItems ", invoice_items);
-            for (const item of invoice_items) {
-              const itemTotalPrice = item.quantity * item.piecePrice;
-              total += itemTotalPrice;
-            }
-            if (total >= invoice.dataValues.amountPaid) {
-              // now client will not take money
-              const remainingBalance = total - invoice.dataValues.amountPaid;
-              await invoice.update({
-                total,
-                remainingBalance,
-              });
-            } else {
-              // now user will take money and we will create new expense as return
-              returnedMoney = invoice.dataValues.amountPaid - total;
-              await invoice.update({
-                total,
-                remainingBalance: 0,
-                amountPaid: total,
-              });
-              if (returnedMoney > 0) {
-                await InvoiceReturnsMoney.create({
-                  invoiceId: invoice.dataValues.id,
-                  clientId: invoice.dataValues.clientId,
-                  returned_money: returnedMoney,
+        const product = await Product.findByPk(item.dataValues.productId);
+        if (product != null) {
+          const oldStock = product.dataValues.stock;
+          if (oldquantity < invoiceItem.quantity) {
+            // will decrease product stock client increase quantity
+            const newQuantity = invoiceItem.quantity - oldquantity;
+            const newStock = oldStock - newQuantity;
+            await product.update({
+              stock: newStock,
+            });
+          }
+          if (oldquantity > invoiceItem.quantity) {
+            // will increase product stock because user add return now
+            // add new return
+
+            const newQuantity = oldquantity - invoiceItem.quantity;
+            const newStock = oldStock + newQuantity;
+            await product.update({
+              stock: newStock,
+            });
+            // create new return
+            await Returns.create({
+              quantity: newQuantity,
+              productId: invoiceItem.productId,
+            });
+          }
+          const invoice_items = await InvoiceItems.findAll({
+            where: {
+              invoiceId: invoiceItem.dataValues.invoiceId,
+            },
+          });
+          const invoice = await Invoices.findByPk(
+            invoiceItem.dataValues.invoiceId
+          );
+          if (invoice) {
+            if (invoice_items.length > 0) {
+              console.log("there is another items ===>>>", invoice_items);
+              let total = 0;
+              console.log("invoiceItems ", invoice_items);
+              for (const item of invoice_items) {
+                const itemTotalPrice = item.quantity * item.piecePrice;
+                total += itemTotalPrice;
+              }
+              if (total >= invoice.dataValues.amountPaid) {
+                // now client will not take money
+                const remainingBalance = total - invoice.dataValues.amountPaid;
+                await invoice.update({
+                  total,
+                  remainingBalance,
                 });
+              } else {
+                // now user will take money and we will create new expense as return
+                returnedMoney = invoice.dataValues.amountPaid - total;
+                await invoice.update({
+                  total,
+                  remainingBalance: 0,
+                  amountPaid: total,
+                });
+                if (returnedMoney > 0) {
+                  await InvoiceReturnsMoney.create({
+                    invoiceId: invoice.dataValues.id,
+                    clientId: invoice.dataValues.clientId,
+                    returned_money: returnedMoney,
+                  });
+                }
               }
             }
           }
         }
-      }
-      try {
       } catch (error) {
         throw new Error("Error while updating items payment:", error);
       }
