@@ -7,7 +7,7 @@ const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
-
+const Returns = require("../models/returns.model");
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
@@ -207,23 +207,27 @@ exports.updateInvoice = async (req, res) => {
               productId: invoiceItem.productId,
             });
           }
+
           const invoice_items = await InvoiceItems.findAll({
             where: {
-              invoiceId: invoiceItem.dataValues.invoiceId,
+              invoiceId: invoiceId,
             },
           });
-          const invoice = await Invoices.findByPk(
-            invoiceItem.dataValues.invoiceId
-          );
+
+          const invoice = await Invoices.findByPk(invoiceId);
           if (invoice) {
             if (invoice_items.length > 0) {
-              console.log("there is another items ===>>>", invoice_items);
+              console.log(
+                "there is another items ===>>>",
+                invoice_items.dataValues
+              );
               let total = 0;
               console.log("invoiceItems ", invoice_items);
               for (const item of invoice_items) {
                 const itemTotalPrice = item.quantity * item.piecePrice;
                 total += itemTotalPrice;
               }
+
               if (total >= invoice.dataValues.amountPaid) {
                 // now client will not take money
                 const remainingBalance = total - invoice.dataValues.amountPaid;
@@ -231,6 +235,7 @@ exports.updateInvoice = async (req, res) => {
                   total,
                   remainingBalance,
                 });
+                console.log("hiiiiiiiiiiiiiiiiiii end of first if ");
               } else {
                 // now user will take money and we will create new expense as return
                 returnedMoney = invoice.dataValues.amountPaid - total;
@@ -241,7 +246,7 @@ exports.updateInvoice = async (req, res) => {
                 });
                 if (returnedMoney > 0) {
                   await InvoiceReturnsMoney.create({
-                    invoiceId: invoice.dataValues.id,
+                    invoiceId,
                     clientId: invoice.dataValues.clientId,
                     returned_money: returnedMoney,
                   });
@@ -251,7 +256,8 @@ exports.updateInvoice = async (req, res) => {
           }
         }
       } catch (error) {
-        throw new Error("Error while updating items payment:", error);
+        console.log(error);
+        throw new Error(error);
       }
     }
     for (const payment of newPayments) {
@@ -280,7 +286,6 @@ exports.updateInvoice = async (req, res) => {
       }
     );
 
-    console.log("invoiceItems ", invoiceItems);
     return res.status(200).json({
       status_code: 200,
       data: null,
