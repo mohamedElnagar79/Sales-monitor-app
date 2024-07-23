@@ -6,6 +6,8 @@ const Clients = require("../models/clients.model");
 const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
+const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
+const Product = require("../models/product.model");
 
 exports.getInvoices = async (req, res) => {
   try {
@@ -127,6 +129,15 @@ exports.getInvoicePayments = async (req, res) => {
   const invoiceId = req.params.id;
   try {
     let totalOfOldPaid = 0;
+    let returnesMoney = 0;
+    const Invoice_returnes_money = await InvoiceReturnsMoney.findAll({
+      where: {
+        invoiceId,
+      },
+    });
+    Invoice_returnes_money.map((item) => {
+      returnesMoney += item.dataValues.returned_money;
+    });
     const payments = await IvoicePayments.findAll({
       attributes: ["id", "total", "amountPaid", "remaining", "createdAt"],
       where: {
@@ -134,7 +145,7 @@ exports.getInvoicePayments = async (req, res) => {
       },
     });
     payments.map((item) => {
-      totalOfOldPaid += item.dataValues.amountPaid;
+      totalOfOldPaid += item.dataValues.amountPaid - returnesMoney;
       item.dataValues.createdAt = moment(item.dataValues.createdAt).format(
         "DD/MM/YYYY"
       );
@@ -159,14 +170,92 @@ exports.getInvoicePayments = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { clientId, invoiceId, invoice, newInvoiceItems, newPayments } =
+    const { clientId, invoiceId, invoice, updatedinvoiceItems, newPayments } =
       req.body;
-    const invoiceItems = await InvoiceItems.findAll({
-      where: {
-        invoiceId,
-      },
-    });
 
+    for (const invoiceItem of updatedinvoiceItems) {
+      console.log("invoiceitems ", invoiceItem);
+      const item = await InvoiceItems.findByPk(invoiceItem.id);
+      const oldquantity = item.dataValues.quantity;
+      await item.update({
+        quantity: invoiceItem.quantity,
+        piecePrice: invoiceItem.piecePrice,
+      });
+
+      const product = await Product.findByPk(item.dataValues.productId);
+      if (product != null) {
+        const oldStock = product.dataValues.stock;
+        if (oldquantity < invoiceItem.quantity) {
+          // will decrease product stock client increase quantity
+          const newQuantity = invoiceItem.quantity - oldquantity;
+          const newStock = oldStock - newQuantity;
+          await product.update({
+            stock: newStock,
+          });
+        }
+        if (oldquantity > invoiceItem.quantity) {
+          // will increase product stock because user add return now
+          // add new return
+
+          const newQuantity = oldquantity - invoiceItem.quantity;
+          const newStock = oldStock + newQuantity;
+          await product.update({
+            stock: newStock,
+          });
+          // create new return
+          await Returns.create({
+            quantity: newQuantity,
+            productId: invoiceItem.productId,
+          });
+        }
+        const invoice_items = await InvoiceItems.findAll({
+          where: {
+            invoiceId: invoiceItem.dataValues.invoiceId,
+          },
+        });
+        const invoice = await Invoices.findByPk(
+          invoiceItem.dataValues.invoiceId
+        );
+        if (invoice) {
+          if (invoice_items.length > 0) {
+            console.log("there is another items ===>>>", invoice_items);
+            let total = 0;
+            console.log("invoiceItems ", invoice_items);
+            for (const item of invoice_items) {
+              const itemTotalPrice = item.quantity * item.piecePrice;
+              total += itemTotalPrice;
+            }
+            if (total >= invoice.dataValues.amountPaid) {
+              // now client will not take money
+              const remainingBalance = total - invoice.dataValues.amountPaid;
+              await invoice.update({
+                total,
+                remainingBalance,
+              });
+            } else {
+              // now user will take money and we will create new expense as return
+              returnedMoney = invoice.dataValues.amountPaid - total;
+              await invoice.update({
+                total,
+                remainingBalance: 0,
+                amountPaid: total,
+              });
+              if (returnedMoney > 0) {
+                await InvoiceReturnsMoney.create({
+                  invoiceId: invoice.dataValues.id,
+                  clientId: invoice.dataValues.clientId,
+                  returned_money: returnedMoney,
+                });
+              }
+            }
+          }
+        }
+      }
+      try {
+      } catch (error) {
+        throw new Error("Error while updating items payment:", error);
+      }
+    }
     for (const payment of newPayments) {
       try {
         await IvoicePayments.create({
