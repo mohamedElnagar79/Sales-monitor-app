@@ -8,6 +8,7 @@ const Clients = require("../models/clients.model");
 const Invoices = require("../models/invoice.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const Returns = require("../models/returns.model");
+const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 
 exports.createNewInvoice = async (req, res, next) => {
   const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
@@ -336,6 +337,13 @@ exports.deleteInvoiceItem = async (req, res, next) => {
               remainingBalance: 0,
               amountPaid: total,
             });
+            if (returnedMoney > 0) {
+              await InvoiceReturnsMoney.create({
+                invoiceId: invoice.dataValues.id,
+                clientId: invoice.dataValues.clientId,
+                returned_money: returnedMoney,
+              });
+            }
           }
         } else {
           console.log("there is not other items ");
