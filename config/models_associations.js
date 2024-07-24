@@ -5,17 +5,24 @@ const Returns = require("../models/returns.model");
 const Clients = require("../models/clients.model");
 const Invoices = require("../models/invoice.model");
 const IvoicePayments = require("../models/invoice_payments.model");
+const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 Product.hasMany(invoice_items);
 invoice_items.belongsTo(Product);
 
-invoice_items.hasMany(Returns);
-Returns.belongsTo(invoice_items);
+Product.hasMany(Returns);
+Returns.belongsTo(Product);
 
 Invoices.hasMany(invoice_items);
 invoice_items.belongsTo(Invoices);
 
 Clients.hasMany(Invoices);
 Invoices.belongsTo(Clients);
+
+Clients.hasMany(InvoiceReturnsMoney);
+InvoiceReturnsMoney.belongsTo(Clients);
+
+Invoices.hasMany(InvoiceReturnsMoney);
+InvoiceReturnsMoney.belongsTo(Invoices);
 
 Clients.hasMany(IvoicePayments);
 IvoicePayments.belongsTo(Clients);

@@ -5,6 +5,7 @@ const invoiceController = require("../controllers/invoiceController");
 const {
   getInvoicesValidation,
   validateParamId,
+  validateUpdateInvoice,
 } = require("../validations/invoice.validation");
 router
   .route("/invoices")
@@ -31,6 +32,15 @@ router
     validateParamId,
     config.mwError,
     invoiceController.getInvoicePayments
+  );
+
+router
+  .route("/invoice")
+  .put(
+    config.auth,
+    validateUpdateInvoice,
+    config.mwError,
+    invoiceController.updateInvoice
   );
 
 module.exports = router;

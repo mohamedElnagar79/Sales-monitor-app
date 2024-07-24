@@ -6,7 +6,7 @@ const {
   sellProductsValidation,
   validateParamId,
   //   getLastSalesValidation,
-  //   calcDaysValidation,
+  calcDaysValidation,
 } = require("../validations/invoice_items.validation");
 
 router
@@ -27,8 +27,13 @@ router
     invoice_itemsController.getInvoiceItems
   );
 router
-  .route("/invoice-items")
-  .put(config.auth, invoice_itemsController.updateInvoiceItems);
+  .route("/invoice-item/:id")
+  .delete(
+    config.auth,
+    validateParamId,
+    config.mwError,
+    invoice_itemsController.deleteInvoiceItem
+  );
 
 // router
 //   .route("/get-last-sales")
@@ -36,14 +41,14 @@ router
 //     config.auth,
 //     getLastSalesValidation,
 //     config.mwError,
-//     salesController.getlastsales
+//     invoice_itemsController.getlastsales
 //   );
-// router
-//   .route("/calc-daily-sales")
-//   .get(
-//     config.auth,
-//     calcDaysValidation,
-//     config.mwError,
-//     salesController.calcDailySales
-//   );
+router
+  .route("/calc-daily-sales")
+  .get(
+    config.auth,
+    calcDaysValidation,
+    config.mwError,
+    invoice_itemsController.calcDailySales
+  );
 module.exports = router;

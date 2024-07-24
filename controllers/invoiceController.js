@@ -6,6 +6,9 @@ const Clients = require("../models/clients.model");
 const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
+const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
+const Returns = require("../models/returns.model");
+const DailyExpense = require("../models/Daily_expense.model");
 
 exports.getInvoices = async (req, res) => {
   try {
@@ -127,6 +130,15 @@ exports.getInvoicePayments = async (req, res) => {
   const invoiceId = req.params.id;
   try {
     let totalOfOldPaid = 0;
+    let returnesMoney = 0;
+    const Invoice_returnes_money = await InvoiceReturnsMoney.findAll({
+      where: {
+        invoiceId,
+      },
+    });
+    Invoice_returnes_money.map((item) => {
+      returnesMoney += item.dataValues.returned_money;
+    });
     const payments = await IvoicePayments.findAll({
       attributes: ["id", "total", "amountPaid", "remaining", "createdAt"],
       where: {
@@ -134,7 +146,7 @@ exports.getInvoicePayments = async (req, res) => {
       },
     });
     payments.map((item) => {
-      totalOfOldPaid += item.dataValues.amountPaid;
+      totalOfOldPaid += item.dataValues.amountPaid - returnesMoney;
       item.dataValues.createdAt = moment(item.dataValues.createdAt).format(
         "DD/MM/YYYY"
       );
@@ -144,9 +156,144 @@ exports.getInvoicePayments = async (req, res) => {
       status_code: 200,
       data: {
         totalOfOldPaid,
+        returnesMoney,
         payments,
       },
       message: "success",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
+    });
+  }
+};
+
+exports.updateInvoice = async (req, res) => {
+  try {
+    const { invoice, invoiceId, updatedinvoiceItems, newPayments } = req.body;
+    for (const invoiceItem of updatedinvoiceItems) {
+      try {
+        let newQuantity;
+        const item = await InvoiceItems.findByPk(invoiceItem.id);
+        const oldquantity = item.dataValues.quantity;
+        await item.update({
+          quantity: invoiceItem.quantity,
+          piecePrice: invoiceItem.piecePrice,
+        });
+        const product = await Product.findByPk(item.dataValues.productId);
+        if (product != null) {
+          const oldStock = product.dataValues.stock;
+          if (oldquantity < invoiceItem.quantity) {
+            // will decrease product stock client increase quantity
+            const newQuantity = invoiceItem.quantity - oldquantity;
+            const newStock = oldStock - newQuantity;
+            await product.update({
+              stock: newStock,
+            });
+          }
+          if (oldquantity > invoiceItem.quantity) {
+            // will increase product stock because user add return now
+            // add new return
+            newQuantity = oldquantity - invoiceItem.quantity;
+            const newStock = oldStock + newQuantity;
+            await product.update({
+              stock: newStock,
+            });
+            // create new return
+            await Returns.create({
+              quantity: newQuantity,
+              productId: invoiceItem.productId,
+            });
+          }
+          const invoice_items = await InvoiceItems.findAll({
+            where: {
+              invoiceId: invoiceId,
+            },
+          });
+          const invoice = await Invoices.findByPk(invoiceId);
+          if (invoice) {
+            if (invoice_items.length > 0) {
+              let total = 0;
+              for (const item of invoice_items) {
+                const itemTotalPrice = item.quantity * item.piecePrice;
+                total += itemTotalPrice;
+              }
+
+              if (total >= invoice.dataValues.amountPaid) {
+                // now client will not take money
+                const remainingBalance = total - invoice.dataValues.amountPaid;
+                await invoice.update({
+                  total,
+                  remainingBalance,
+                });
+              } else {
+                // now user will take money and we will create new expense as return
+                returnedMoney = invoice.dataValues.amountPaid - total;
+                await invoice.update({
+                  total,
+                  remainingBalance: 0,
+                  amountPaid: total,
+                });
+                if (returnedMoney > 0) {
+                  await InvoiceReturnsMoney.create({
+                    invoiceId,
+                    clientId: invoice.dataValues.clientId,
+                    returned_money: returnedMoney,
+                  });
+                  await invoice.update({
+                    amountPaid: invoice.amountPaid - returnedMoney,
+                  });
+                  await DailyExpense.create({
+                    amount: returnedMoney,
+                    expenseName: "مرتجع",
+                    description:
+                      newQuantity > 1
+                        ? `${newQuantity} - ` + product.dataValues.name
+                        : product.dataValues.name,
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log(error);
+        throw new Error(error);
+      }
+    }
+    for (const payment of newPayments) {
+      try {
+        console.log("invoice.dataValues.clientId, ", invoice.clientId);
+        await IvoicePayments.create({
+          total: payment.total,
+          amountPaid: payment.amountPaid,
+          remaining: payment.remaining,
+          clientId: invoice.clientId,
+          invoiceId,
+        });
+      } catch (error) {
+        console.error("Error creating payment:", error);
+      }
+    }
+
+    await Invoices.update(
+      {
+        amountPaid: invoice.amountPaid,
+        remainingBalance: invoice.remainder,
+      },
+      {
+        where: {
+          id: invoiceId, // Update invoice with matching ID
+        },
+      }
+    );
+
+    return res.status(200).json({
+      status_code: 200,
+      data: null,
+      message: "updated successfully",
     });
   } catch (error) {
     return res.status(500).json({
