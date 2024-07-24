@@ -154,6 +154,7 @@ exports.getInvoicePayments = async (req, res) => {
       status_code: 200,
       data: {
         totalOfOldPaid,
+        returnesMoney,
         payments,
       },
       message: "success",
