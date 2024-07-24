@@ -172,12 +172,9 @@ exports.getInvoicePayments = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { clientId, invoiceId, invoice, updatedinvoiceItems, newPayments } =
-      req.body;
-
+    const { invoice, invoiceId, updatedinvoiceItems, newPayments } = req.body;
     for (const invoiceItem of updatedinvoiceItems) {
       try {
-        console.log("invoiceitems ", invoiceItem);
         let newQuantity;
         const item = await InvoiceItems.findByPk(invoiceItem.id);
         const oldquantity = item.dataValues.quantity;
@@ -268,11 +265,12 @@ exports.updateInvoice = async (req, res) => {
     }
     for (const payment of newPayments) {
       try {
+        console.log("invoice.dataValues.clientId, ", invoice.clientId);
         await IvoicePayments.create({
           total: payment.total,
           amountPaid: payment.amountPaid,
           remaining: payment.remaining,
-          clientId,
+          clientId: invoice.clientId,
           invoiceId,
         });
       } catch (error) {
