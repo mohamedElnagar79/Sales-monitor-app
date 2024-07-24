@@ -8,6 +8,8 @@ const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 const Returns = require("../models/returns.model");
+const DeilyExpense = require("../models/Daily_expense.model");
+const DailyExpense = require("../models/Daily_expense.model");
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
@@ -176,6 +178,7 @@ exports.updateInvoice = async (req, res) => {
     for (const invoiceItem of updatedinvoiceItems) {
       try {
         console.log("invoiceitems ", invoiceItem);
+        let newQuantity;
         const item = await InvoiceItems.findByPk(invoiceItem.id);
         const oldquantity = item.dataValues.quantity;
         await item.update({
@@ -197,7 +200,7 @@ exports.updateInvoice = async (req, res) => {
             // will increase product stock because user add return now
             // add new return
 
-            const newQuantity = oldquantity - invoiceItem.quantity;
+            newQuantity = oldquantity - invoiceItem.quantity;
             const newStock = oldStock + newQuantity;
             await product.update({
               stock: newStock,
@@ -250,6 +253,15 @@ exports.updateInvoice = async (req, res) => {
                     invoiceId,
                     clientId: invoice.dataValues.clientId,
                     returned_money: returnedMoney,
+                  });
+                  console.log("here ");
+                  await DailyExpense.create({
+                    amount: returnedMoney,
+                    expenseName: "مرتجع",
+                    description:
+                      newQuantity > 1
+                        ? `${newQuantity} - ` + product.dataValues.name
+                        : product.dataValues.name,
                   });
                 }
               }

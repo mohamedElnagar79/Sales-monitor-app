@@ -1,5 +1,6 @@
 const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
+const moment = require("moment");
 
 exports.addNewExpense = async (req, res, next) => {
   try {
@@ -45,9 +46,9 @@ exports.getAllExpenses = async (req, res, next) => {
     });
     dailyExpense.rows.map((outgoing) => {
       outgoing.description = config.truncateText(outgoing.description, 50);
-      outgoing.dataValues.updatedAt = config.formatDate(
+      outgoing.dataValues.updatedAt = moment(
         outgoing.dataValues.updatedAt
-      );
+      ).format("DD/MM/YYYY");
     });
     return res.status(200).json({
       status_code: 200,
@@ -55,6 +56,7 @@ exports.getAllExpenses = async (req, res, next) => {
       message: "success",
     });
   } catch (error) {
+    console.log("error ", error);
     return res.status(500).json({
       status_code: 500,
       data: null,
