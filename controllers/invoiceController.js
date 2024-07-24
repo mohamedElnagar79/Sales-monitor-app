@@ -8,8 +8,8 @@ const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 const Returns = require("../models/returns.model");
-const DeilyExpense = require("../models/Daily_expense.model");
 const DailyExpense = require("../models/Daily_expense.model");
+
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
