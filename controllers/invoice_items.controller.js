@@ -263,7 +263,6 @@ exports.calcDailySales = async (req, res, next) => {
       },
       include: { model: Clients, required: false, attributes: ["id", "name"] },
     });
-    console.log("invoice_payments   ", invoice_payments.rows);
     const totalAmountPaid = invoice_payments.rows.reduce(
       (sum, invoice_payments) => sum + parseFloat(invoice_payments.amountPaid),
       0
