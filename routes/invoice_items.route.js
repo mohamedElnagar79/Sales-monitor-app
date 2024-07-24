@@ -6,7 +6,7 @@ const {
   sellProductsValidation,
   validateParamId,
   //   getLastSalesValidation,
-  //   calcDaysValidation,
+  calcDaysValidation,
 } = require("../validations/invoice_items.validation");
 
 router
@@ -41,14 +41,14 @@ router
 //     config.auth,
 //     getLastSalesValidation,
 //     config.mwError,
-//     salesController.getlastsales
+//     invoice_itemsController.getlastsales
 //   );
-// router
-//   .route("/calc-daily-sales")
-//   .get(
-//     config.auth,
-//     calcDaysValidation,
-//     config.mwError,
-//     salesController.calcDailySales
-//   );
+router
+  .route("/calc-daily-sales")
+  .get(
+    config.auth,
+    calcDaysValidation,
+    config.mwError,
+    invoice_itemsController.calcDailySales
+  );
 module.exports = router;
