@@ -199,7 +199,6 @@ exports.updateInvoice = async (req, res) => {
           if (oldquantity > invoiceItem.quantity) {
             // will increase product stock because user add return now
             // add new return
-
             newQuantity = oldquantity - invoiceItem.quantity;
             const newStock = oldStock + newQuantity;
             await product.update({
@@ -211,22 +210,15 @@ exports.updateInvoice = async (req, res) => {
               productId: invoiceItem.productId,
             });
           }
-
           const invoice_items = await InvoiceItems.findAll({
             where: {
               invoiceId: invoiceId,
             },
           });
-
           const invoice = await Invoices.findByPk(invoiceId);
           if (invoice) {
             if (invoice_items.length > 0) {
-              console.log(
-                "there is another items ===>>>",
-                invoice_items.dataValues
-              );
               let total = 0;
-              console.log("invoiceItems ", invoice_items);
               for (const item of invoice_items) {
                 const itemTotalPrice = item.quantity * item.piecePrice;
                 total += itemTotalPrice;
@@ -239,7 +231,6 @@ exports.updateInvoice = async (req, res) => {
                   total,
                   remainingBalance,
                 });
-                console.log("hiiiiiiiiiiiiiiiiiii end of first if ");
               } else {
                 // now user will take money and we will create new expense as return
                 returnedMoney = invoice.dataValues.amountPaid - total;
@@ -254,7 +245,9 @@ exports.updateInvoice = async (req, res) => {
                     clientId: invoice.dataValues.clientId,
                     returned_money: returnedMoney,
                   });
-                  console.log("here ");
+                  await invoice.update({
+                    amountPaid: invoice.amountPaid - returnedMoney,
+                  });
                   await DailyExpense.create({
                     amount: returnedMoney,
                     expenseName: "مرتجع",
