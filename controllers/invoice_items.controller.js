@@ -1,6 +1,6 @@
 const InvoiceItems = require("../models/invoice_items.model");
 const Product = require("../models/product.model");
-const { Op, Sequelize, where } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const moment = require("moment");
 const config = require("../config/middlewares");
 const DailyExpense = require("../models/Daily_expense.model");
@@ -203,14 +203,13 @@ exports.calcDailySales = async (req, res, next) => {
     let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
-    const sales = await Sales.findAndCountAll({
+    const invoices = await Invoices.findAndCountAll({
       attributes: [
         "id",
-        [Sequelize.col("product.name"), "productName"],
+        "total",
         "amountPaid",
-        "quantity",
         "remainingBalance",
-        "clientName",
+        "updatedAt",
       ],
       where: {
         createdAt: {
@@ -220,11 +219,27 @@ exports.calcDailySales = async (req, res, next) => {
       limit,
       offset,
       order: [["updatedAt", "DESC"]],
-      include: {
-        model: Product,
-        required: false,
-        attributes: [],
-      },
+      include: [
+        {
+          model: InvoiceItems,
+          required: false,
+          attributes: [
+            "id",
+            "quantity",
+            "piecePrice",
+            // [Sequelize.col("product.id"), "productId"],
+          ],
+          include: {
+            model: Product,
+            attributes: ["id", "name"],
+          },
+        },
+        {
+          model: Clients,
+          required: false,
+          attributes: ["id", "name"],
+        },
+      ],
     });
 
     const dailyExpense = await DailyExpense.findAndCountAll({
@@ -238,8 +253,18 @@ exports.calcDailySales = async (req, res, next) => {
       limit,
       offset,
     });
-    const totalAmountPaid = sales.rows.reduce(
-      (sum, sale) => sum + parseFloat(sale.amountPaid),
+
+    const invoice_payments = await IvoicePayments.findAndCountAll({
+      attributes: ["id", "total", "amountPaid", "remaining"],
+      where: {
+        createdAt: {
+          [Op.between]: [specifiedDate, nextDay],
+        },
+      },
+      include: { model: Clients, required: false, attributes: ["id", "name"] },
+    });
+    const totalAmountPaid = invoice_payments.rows.reduce(
+      (sum, invoice_payments) => sum + parseFloat(invoice_payments.amountPaid),
       0
     );
 
@@ -250,7 +275,11 @@ exports.calcDailySales = async (req, res, next) => {
     dailyExpense.rows.map((outgoing) => {
       outgoing.description = config.truncateText(outgoing.description, 50);
     });
-
+    invoices.rows.map((invoice) => {
+      invoice.dataValues.updatedAt = moment(
+        invoice.dataValues.updatedAt
+      ).format("DD/MM/YYYY");
+    });
     console.log("totalAmountPaid ==> ", totalAmountPaid);
     console.log("Daily_expense ==> ", totalDailyExpense);
 
@@ -259,9 +288,10 @@ exports.calcDailySales = async (req, res, next) => {
     return res.status(200).json({
       status_code: 200,
       data: {
-        sales,
+        invoices,
         dailyExpense,
         totalAmountPaid,
+        invoice_payments,
         totalDailyExpense,
         totalExistMoney,
       },

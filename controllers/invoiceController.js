@@ -8,8 +8,8 @@ const Product = require("../models/product.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 const Returns = require("../models/returns.model");
-const DeilyExpense = require("../models/Daily_expense.model");
 const DailyExpense = require("../models/Daily_expense.model");
+
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
@@ -172,12 +172,9 @@ exports.getInvoicePayments = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { clientId, invoiceId, invoice, updatedinvoiceItems, newPayments } =
-      req.body;
-
+    const { invoice, invoiceId, updatedinvoiceItems, newPayments } = req.body;
     for (const invoiceItem of updatedinvoiceItems) {
       try {
-        console.log("invoiceitems ", invoiceItem);
         let newQuantity;
         const item = await InvoiceItems.findByPk(invoiceItem.id);
         const oldquantity = item.dataValues.quantity;
@@ -199,7 +196,6 @@ exports.updateInvoice = async (req, res) => {
           if (oldquantity > invoiceItem.quantity) {
             // will increase product stock because user add return now
             // add new return
-
             newQuantity = oldquantity - invoiceItem.quantity;
             const newStock = oldStock + newQuantity;
             await product.update({
@@ -211,22 +207,15 @@ exports.updateInvoice = async (req, res) => {
               productId: invoiceItem.productId,
             });
           }
-
           const invoice_items = await InvoiceItems.findAll({
             where: {
               invoiceId: invoiceId,
             },
           });
-
           const invoice = await Invoices.findByPk(invoiceId);
           if (invoice) {
             if (invoice_items.length > 0) {
-              console.log(
-                "there is another items ===>>>",
-                invoice_items.dataValues
-              );
               let total = 0;
-              console.log("invoiceItems ", invoice_items);
               for (const item of invoice_items) {
                 const itemTotalPrice = item.quantity * item.piecePrice;
                 total += itemTotalPrice;
@@ -239,7 +228,6 @@ exports.updateInvoice = async (req, res) => {
                   total,
                   remainingBalance,
                 });
-                console.log("hiiiiiiiiiiiiiiiiiii end of first if ");
               } else {
                 // now user will take money and we will create new expense as return
                 returnedMoney = invoice.dataValues.amountPaid - total;
@@ -254,7 +242,9 @@ exports.updateInvoice = async (req, res) => {
                     clientId: invoice.dataValues.clientId,
                     returned_money: returnedMoney,
                   });
-                  console.log("here ");
+                  await invoice.update({
+                    amountPaid: invoice.amountPaid - returnedMoney,
+                  });
                   await DailyExpense.create({
                     amount: returnedMoney,
                     expenseName: "مرتجع",
@@ -275,11 +265,12 @@ exports.updateInvoice = async (req, res) => {
     }
     for (const payment of newPayments) {
       try {
+        console.log("invoice.dataValues.clientId, ", invoice.clientId);
         await IvoicePayments.create({
           total: payment.total,
           amountPaid: payment.amountPaid,
           remaining: payment.remaining,
-          clientId,
+          clientId: invoice.clientId,
           invoiceId,
         });
       } catch (error) {
