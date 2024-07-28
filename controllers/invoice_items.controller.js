@@ -311,6 +311,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
   try {
     const id = req.params.id;
     let returnedMoney = 0;
+    let productName;
     const invoiceItem = await InvoiceItems.findByPk(id);
     if (invoiceItem) {
       console.log("invoice item ", invoiceItem.dataValues);
@@ -319,6 +320,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
       await invoiceItem.destroy();
       // increase quantity of product or create new one if it deleted
       const product = await Product.findByPk(productId);
+      productName = product.dataValues.name;
       if (product) {
         const newStock =
           product.dataValues.stock + invoiceItem.dataValues.quantity;
@@ -402,8 +404,8 @@ exports.deleteInvoiceItem = async (req, res, next) => {
         expenseName: "مرتجع",
         description:
           deletedQuantity > 1
-            ? `${deletedQuantity} - ` + product.dataValues.name
-            : product.dataValues.name,
+            ? `${deletedQuantity} - ` + productName
+            : productName,
       });
     }
     return res.status(200).json({
