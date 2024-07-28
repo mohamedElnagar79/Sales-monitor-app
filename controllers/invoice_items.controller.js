@@ -237,7 +237,7 @@ exports.calcDailySales = async (req, res, next) => {
         {
           model: Clients,
           required: false,
-          attributes: ["id", "name"],
+          attributes: ["id", "name", "phone"],
         },
       ],
     });
@@ -382,13 +382,6 @@ exports.deleteInvoiceItem = async (req, res, next) => {
           // if user paid thie invoice he will take returnedMoney and delete invoice and create expense
           returnedMoney = invoice.dataValues.amountPaid;
           await invoice.destroy();
-          if (returnedMoney != 0) {
-            await DailyExpense.create({
-              amount: returnedMoney,
-              expenseName: "مرتجع",
-              description: product.dataValues.name,
-            });
-          }
         }
       }
 
@@ -401,7 +394,17 @@ exports.deleteInvoiceItem = async (req, res, next) => {
         message: "item not found or is already deleted",
       });
     }
-
+    if (returnedMoney != 0) {
+      let deletedQuantity = invoiceItem.dataValues.quantity;
+      await DailyExpense.create({
+        amount: returnedMoney,
+        expenseName: "مرتجع",
+        description:
+          deletedQuantity > 1
+            ? `${deletedQuantity} - ` + product.dataValues.name
+            : product.dataValues.name,
+      });
+    }
     return res.status(200).json({
       status_code: 200,
       data: returnedMoney,
