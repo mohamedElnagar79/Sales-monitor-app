@@ -198,12 +198,9 @@ exports.calcDailySales = async (req, res, next) => {
     specifiedDate.setHours(0, 0, 0, 0); // Start of the day
     const nextDay = new Date(specifiedDate);
     nextDay.setDate(specifiedDate.getDate() + 1);
-    // console.log("nextDay ===> ", nextDay);
     nextDay.setHours(0, 0, 0, 0); // Start of the next day
-    let limit = req.query.rows ? +req.query.rows : 8;
-    let offset = req.query.page ? (req.query.page - 1) * limit : 0;
 
-    const invoices = await Invoices.findAndCountAll({
+    const invoices = await Invoices.findAll({
       attributes: [
         "id",
         "total",
@@ -216,8 +213,6 @@ exports.calcDailySales = async (req, res, next) => {
           [Op.between]: [specifiedDate, nextDay],
         },
       },
-      limit,
-      offset,
       order: [["updatedAt", "DESC"]],
       include: [
         {
@@ -237,12 +232,12 @@ exports.calcDailySales = async (req, res, next) => {
         {
           model: Clients,
           required: false,
-          attributes: ["id", "name"],
+          attributes: ["id", "name", "phone"],
         },
       ],
     });
 
-    const dailyExpense = await DailyExpense.findAndCountAll({
+    const dailyExpense = await DailyExpense.findAll({
       attributes: ["id", "amount", "expenseName", "description"],
       where: {
         createdAt: {
@@ -250,12 +245,10 @@ exports.calcDailySales = async (req, res, next) => {
         },
       },
       order: [["updatedAt", "DESC"]],
-      limit,
-      offset,
     });
 
-    const invoice_payments = await IvoicePayments.findAndCountAll({
-      attributes: ["id", "total", "amountPaid", "remaining"],
+    const invoice_payments = await IvoicePayments.findAll({
+      attributes: ["id", "total", "amountPaid", "remaining", "invoiceId"],
       where: {
         createdAt: {
           [Op.between]: [specifiedDate, nextDay],
@@ -263,19 +256,27 @@ exports.calcDailySales = async (req, res, next) => {
       },
       include: { model: Clients, required: false, attributes: ["id", "name"] },
     });
-    const totalAmountPaid = invoice_payments.rows.reduce(
+    const totalAmountPaid = invoice_payments.reduce(
       (sum, invoice_payments) => sum + parseFloat(invoice_payments.amountPaid),
       0
     );
-
-    const totalDailyExpense = dailyExpense.rows.reduce(
+    const oldPayments = invoice_payments.filter((payment) => {
+      for (const invoice of invoices) {
+        if (invoice.id === payment.invoiceId) {
+          return false; // Payment has a matching invoice
+        }
+      }
+      return true; // Payment does not have a matching invoice
+    });
+    console.log("oldPayments  =  =>", oldPayments.dataValues);
+    const totalDailyExpense = dailyExpense.reduce(
       (sum, expense) => sum + parseFloat(expense.amount),
       0
     );
-    dailyExpense.rows.map((outgoing) => {
+    dailyExpense.map((outgoing) => {
       outgoing.description = config.truncateText(outgoing.description, 50);
     });
-    invoices.rows.map((invoice) => {
+    invoices.map((invoice) => {
       invoice.dataValues.updatedAt = moment(
         invoice.dataValues.updatedAt
       ).format("DD/MM/YYYY");
@@ -291,7 +292,7 @@ exports.calcDailySales = async (req, res, next) => {
         invoices,
         dailyExpense,
         totalAmountPaid,
-        invoice_payments,
+        oldPayments,
         totalDailyExpense,
         totalExistMoney,
       },
@@ -310,6 +311,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
   try {
     const id = req.params.id;
     let returnedMoney = 0;
+    let productName;
     const invoiceItem = await InvoiceItems.findByPk(id);
     if (invoiceItem) {
       console.log("invoice item ", invoiceItem.dataValues);
@@ -318,6 +320,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
       await invoiceItem.destroy();
       // increase quantity of product or create new one if it deleted
       const product = await Product.findByPk(productId);
+      productName = product.dataValues.name;
       if (product) {
         const newStock =
           product.dataValues.stock + invoiceItem.dataValues.quantity;
@@ -382,13 +385,6 @@ exports.deleteInvoiceItem = async (req, res, next) => {
           // if user paid thie invoice he will take returnedMoney and delete invoice and create expense
           returnedMoney = invoice.dataValues.amountPaid;
           await invoice.destroy();
-          if (returnedMoney != 0) {
-            await DailyExpense.create({
-              amount: returnedMoney,
-              expenseName: "مرتجع",
-              description: product.dataValues.name,
-            });
-          }
         }
       }
 
@@ -401,7 +397,17 @@ exports.deleteInvoiceItem = async (req, res, next) => {
         message: "item not found or is already deleted",
       });
     }
-
+    if (returnedMoney != 0) {
+      let deletedQuantity = invoiceItem.dataValues.quantity;
+      await DailyExpense.create({
+        amount: returnedMoney,
+        expenseName: "مرتجع",
+        description:
+          deletedQuantity > 1
+            ? `${deletedQuantity} - ` + productName
+            : productName,
+      });
+    }
     return res.status(200).json({
       status_code: 200,
       data: returnedMoney,
