@@ -173,45 +173,51 @@ exports.getInvoicePayments = async (req, res) => {
 exports.updateInvoice = async (req, res) => {
   try {
     const { invoice, invoiceId, updatedinvoiceItems, newPayments } = req.body;
+    let returnedItems = [];
+    let totalReturnedAmount = 0;
+
     for (const invoiceItem of updatedinvoiceItems) {
       try {
-        let newQuantity;
         const item = await InvoiceItems.findByPk(invoiceItem.id);
         const oldquantity = item.dataValues.quantity;
         await item.update({
           quantity: invoiceItem.quantity,
           piecePrice: invoiceItem.piecePrice,
         });
+
         const product = await Product.findByPk(item.dataValues.productId);
         if (product != null) {
           const oldStock = product.dataValues.stock;
+
           if (oldquantity < invoiceItem.quantity) {
-            // will decrease product stock client increase quantity
+            // Decrease product stock if client increases quantity
             const newQuantity = invoiceItem.quantity - oldquantity;
             const newStock = oldStock - newQuantity;
-            await product.update({
-              stock: newStock,
-            });
-          }
-          if (oldquantity > invoiceItem.quantity) {
-            // will increase product stock because user add return now
-            // add new return
-            newQuantity = oldquantity - invoiceItem.quantity;
+            await product.update({ stock: newStock });
+          } else if (oldquantity > invoiceItem.quantity) {
+            // Increase product stock if user returns some items
+            const newQuantity = oldquantity - invoiceItem.quantity;
             const newStock = oldStock + newQuantity;
-            await product.update({
-              stock: newStock,
-            });
-            // create new return
+            await product.update({ stock: newStock });
+
+            // Create new return
             await Returns.create({
               quantity: newQuantity,
               productId: invoiceItem.productId,
             });
+
+            // Add to returned items array
+            returnedItems.push({
+              quantity: newQuantity,
+              name: product.dataValues.name,
+            });
+            totalReturnedAmount += newQuantity * invoiceItem.piecePrice;
           }
+
           const invoice_items = await InvoiceItems.findAll({
-            where: {
-              invoiceId: invoiceId,
-            },
+            where: { invoiceId: invoiceId },
           });
+
           const invoice = await Invoices.findByPk(invoiceId);
           if (invoice) {
             if (invoice_items.length > 0) {
@@ -222,20 +228,16 @@ exports.updateInvoice = async (req, res) => {
               }
 
               if (total >= invoice.dataValues.amountPaid) {
-                // now client will not take money
                 const remainingBalance = total - invoice.dataValues.amountPaid;
-                await invoice.update({
-                  total,
-                  remainingBalance,
-                });
+                await invoice.update({ total, remainingBalance });
               } else {
-                // now user will take money and we will create new expense as return
-                returnedMoney = invoice.dataValues.amountPaid - total;
+                const returnedMoney = invoice.dataValues.amountPaid - total;
                 await invoice.update({
                   total,
                   remainingBalance: 0,
                   amountPaid: total,
                 });
+
                 if (returnedMoney > 0) {
                   await InvoiceReturnsMoney.create({
                     invoiceId,
@@ -244,14 +246,6 @@ exports.updateInvoice = async (req, res) => {
                   });
                   await invoice.update({
                     amountPaid: invoice.amountPaid - returnedMoney,
-                  });
-                  await DailyExpense.create({
-                    amount: returnedMoney,
-                    expenseName: "مرتجع",
-                    description:
-                      newQuantity > 1
-                        ? `${newQuantity} - ` + product.dataValues.name
-                        : product.dataValues.name,
                   });
                 }
               }
@@ -263,10 +257,23 @@ exports.updateInvoice = async (req, res) => {
         throw new Error(error);
       }
     }
+
+    // Create a single DailyExpense entry after processing all updated invoice items
+    if (returnedItems.length > 0) {
+      const descriptions = returnedItems
+        .map((item) => `${item.quantity} - ${item.name}`)
+        .join(", ");
+      await DailyExpense.create({
+        amount: totalReturnedAmount,
+        expenseName: "مرتجع",
+        description: descriptions,
+      });
+    }
+
     for (const payment of newPayments) {
       try {
         console.log("invoice.dataValues.clientId, ", invoice.clientId);
-        await IvoicePayments.create({
+        await InvoicePayments.create({
           total: payment.total,
           amountPaid: payment.amountPaid,
           remaining: payment.remaining,
@@ -283,11 +290,7 @@ exports.updateInvoice = async (req, res) => {
         amountPaid: invoice.amountPaid,
         remainingBalance: invoice.remainder,
       },
-      {
-        where: {
-          id: invoiceId, // Update invoice with matching ID
-        },
-      }
+      { where: { id: invoiceId } }
     );
 
     return res.status(200).json({
