@@ -151,7 +151,7 @@ exports.getInvoicePayments = async (req, res) => {
         "DD/MM/YYYY"
       );
     });
-
+    console.log("tota     l   ", totalOfOldPaid);
     return res.status(200).json({
       status_code: 200,
       data: {
@@ -172,10 +172,10 @@ exports.getInvoicePayments = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { invoice, invoiceId, updatedinvoiceItems, newPayments } = req.body;
+    const { invoiceId, updatedinvoiceItems, newPayments } = req.body;
     let returnedItems = [];
     let totalReturnedAmount = 0;
-
+    const invoice = await Invoices.findByPk(invoiceId);
     for (const invoiceItem of updatedinvoiceItems) {
       try {
         const item = await InvoiceItems.findByPk(invoiceItem.id);
@@ -205,7 +205,18 @@ exports.updateInvoice = async (req, res) => {
               quantity: newQuantity,
               productId: invoiceItem.productId,
             });
+            let returnedItemPrice = newQuantity * invoiceItem.piecePrice;
+            console.log("say hi ", returnedItemPrice);
 
+            if (returnedItemPrice > 0 && invoice) {
+              console.log("heloo000 ");
+              console.log("heloo000 ", returnedItemPrice);
+              await InvoiceReturnsMoney.create({
+                invoiceId,
+                clientId: invoice.clientId,
+                returned_money: returnedItemPrice,
+              });
+            }
             // Add to returned items array
             returnedItems.push({
               quantity: newQuantity,
@@ -217,37 +228,35 @@ exports.updateInvoice = async (req, res) => {
           const invoice_items = await InvoiceItems.findAll({
             where: { invoiceId: invoiceId },
           });
-
-          const invoice = await Invoices.findByPk(invoiceId);
           if (invoice) {
             if (invoice_items.length > 0) {
               let total = 0;
               for (const item of invoice_items) {
                 const itemTotalPrice = item.quantity * item.piecePrice;
                 total += itemTotalPrice;
+                console.log("total", total);
               }
+              console.log("invoice==> ", invoice.dataValues);
 
-              if (total >= invoice.dataValues.amountPaid) {
+              if (total >= invoice.amountPaid) {
+                console.log("total>>>>paid ");
                 const remainingBalance = total - invoice.dataValues.amountPaid;
                 await invoice.update({ total, remainingBalance });
               } else {
+                console.log("total<<<>>>>>>>paid ");
+
                 const returnedMoney = invoice.dataValues.amountPaid - total;
+                console.log("returned MMoney", returnedMoney);
                 await invoice.update({
                   total,
                   remainingBalance: 0,
-                  amountPaid: total,
+                  amountPaid: invoice.amountPaid - returnedMoney,
                 });
-
-                if (returnedMoney > 0) {
-                  await InvoiceReturnsMoney.create({
-                    invoiceId,
-                    clientId: invoice.dataValues.clientId,
-                    returned_money: returnedMoney,
-                  });
-                  await invoice.update({
-                    amountPaid: invoice.amountPaid - returnedMoney,
-                  });
-                }
+                // if (returnedMoney > 0) {
+                //   await invoice.update({
+                //     amountPaid: invoice.amountPaid - returnedMoney,
+                //   });
+                // }
               }
             }
           }
