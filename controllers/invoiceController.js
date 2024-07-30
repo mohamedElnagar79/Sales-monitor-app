@@ -273,7 +273,7 @@ exports.updateInvoice = async (req, res) => {
     for (const payment of newPayments) {
       try {
         console.log("invoice.dataValues.clientId, ", invoice.clientId);
-        await InvoicePayments.create({
+        await IvoicePayments.create({
           total: payment.total,
           amountPaid: payment.amountPaid,
           remaining: payment.remaining,
