@@ -224,7 +224,6 @@ exports.updateInvoice = async (req, res) => {
             });
             totalReturnedAmount += newQuantity * invoiceItem.piecePrice;
           }
-
           const invoice_items = await InvoiceItems.findAll({
             where: { invoiceId: invoiceId },
           });
@@ -234,22 +233,18 @@ exports.updateInvoice = async (req, res) => {
               for (const item of invoice_items) {
                 const itemTotalPrice = item.quantity * item.piecePrice;
                 total += itemTotalPrice;
-                console.log("total", total);
               }
-              console.log("invoice==> ", invoice.dataValues);
-
+              let remainingBalance = 0;
               if (total >= invoice.amountPaid) {
-                console.log("total>>>>paid ");
-                const remainingBalance = total - invoice.dataValues.amountPaid;
+                remainingBalance = total - invoice.dataValues.amountPaid;
                 await invoice.update({ total, remainingBalance });
               } else {
                 console.log("total<<<>>>>>>>paid ");
-
                 const returnedMoney = invoice.dataValues.amountPaid - total;
                 console.log("returned MMoney", returnedMoney);
                 await invoice.update({
                   total,
-                  remainingBalance: 0,
+                  remainingBalance: remainingBalance, //0
                   amountPaid: invoice.amountPaid - returnedMoney,
                 });
                 // if (returnedMoney > 0) {
@@ -278,29 +273,34 @@ exports.updateInvoice = async (req, res) => {
         description: descriptions,
       });
     }
-
-    for (const payment of newPayments) {
-      try {
-        console.log("invoice.dataValues.clientId, ", invoice.clientId);
-        await IvoicePayments.create({
-          total: payment.total,
-          amountPaid: payment.amountPaid,
-          remaining: payment.remaining,
-          clientId: invoice.clientId,
-          invoiceId,
-        });
-      } catch (error) {
-        console.error("Error creating payment:", error);
+    if (newPayments.length > 0) {
+      let remainder = 0;
+      let paymentPaid = 0;
+      for (const payment of newPayments) {
+        try {
+          await IvoicePayments.create({
+            total: payment.total,
+            amountPaid: payment.amountPaid,
+            remaining: payment.remaining,
+            clientId: invoice.clientId,
+            invoiceId,
+          });
+          remainder = payment.remaining;
+          paymentPaid += payment.amountPaid;
+        } catch (error) {
+          console.error("Error creating payment:", error);
+        }
       }
-    }
+      // calc here remainder
 
-    await Invoices.update(
-      {
-        amountPaid: invoice.amountPaid,
-        remainingBalance: invoice.remainder,
-      },
-      { where: { id: invoiceId } }
-    );
+      await Invoices.update(
+        {
+          amountPaid: invoice.amountPaid + paymentPaid,
+          remainingBalance: remainder,
+        },
+        { where: { id: invoiceId } }
+      );
+    }
 
     return res.status(200).json({
       status_code: 200,
