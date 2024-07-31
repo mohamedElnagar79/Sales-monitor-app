@@ -175,11 +175,16 @@ exports.updateInvoice = async (req, res) => {
     const { invoiceId, updatedinvoiceItems, newPayments } = req.body;
     let returnedItems = [];
     let totalReturnedAmount = 0;
+    let returnedMoney = 0;
+    let invoice_returns;
     const invoice = await Invoices.findByPk(invoiceId);
+    let oldRemainder = invoice.remainingBalance;
+    let totalOFRemainder = invoice.remainingBalance;
     for (const invoiceItem of updatedinvoiceItems) {
       try {
         const item = await InvoiceItems.findByPk(invoiceItem.id);
         const oldquantity = item.dataValues.quantity;
+        let currentRemainder = oldRemainder;
         await item.update({
           quantity: invoiceItem.quantity,
           piecePrice: invoiceItem.piecePrice,
@@ -206,16 +211,26 @@ exports.updateInvoice = async (req, res) => {
               productId: invoiceItem.productId,
             });
             let returnedItemPrice = newQuantity * invoiceItem.piecePrice;
-            console.log("say hi ", returnedItemPrice);
-
             if (returnedItemPrice > 0 && invoice) {
-              console.log("heloo000 ");
               console.log("heloo000 ", returnedItemPrice);
-              await InvoiceReturnsMoney.create({
+              let isUpdated = false;
+              let amount = 0;
+              // if (currentRemainder > returnedItemPrice) {
+              //   amount = currentRemainder - returnedItemPrice;
+              //   currentRemainder -= amount;
+              // } else {
+              //   amount = returnedItemPrice - currentRemainder;
+              //   currentRemainder = 0;
+              //   isUpdated = true;
+              // }
+              // console.log("oldRemainder ", oldRemainder);
+              invoice_returns = await InvoiceReturnsMoney.create({
                 invoiceId,
                 clientId: invoice.clientId,
                 returned_money: returnedItemPrice,
               });
+              // oldRemainder = isUpdated ? 0 : oldRemainder;
+              // console.log("eeee ", oldRemainder);
             }
             // Add to returned items array
             returnedItems.push({
@@ -223,6 +238,22 @@ exports.updateInvoice = async (req, res) => {
               name: product.dataValues.name,
             });
             totalReturnedAmount += newQuantity * invoiceItem.piecePrice;
+          }
+          console.log("totalReturnedAmount ,,,,", totalReturnedAmount);
+          console.log("oldRemainder ,,,,", oldRemainder);
+          if (oldRemainder > 0) {
+            if (totalReturnedAmount < currentRemainder) {
+              await invoice_returns.update({
+                returned_money: currentRemainder - totalReturnedAmount,
+              });
+              currentRemainder = 0;
+            } else {
+              await invoice_returns.update({
+                returned_money: 0,
+              });
+              currentRemainder -= totalReturnedAmount;
+            }
+            console.log("invoice returns  ", invoice_returns.dataValues);
           }
           const invoice_items = await InvoiceItems.findAll({
             where: { invoiceId: invoiceId },
@@ -239,14 +270,14 @@ exports.updateInvoice = async (req, res) => {
                 remainingBalance = total - invoice.dataValues.amountPaid;
                 await invoice.update({ total, remainingBalance });
               } else {
-                console.log("total<<<>>>>>>>paid ");
-                const returnedMoney = invoice.dataValues.amountPaid - total;
+                returnedMoney = invoice.dataValues.amountPaid - total;
                 console.log("returned MMoney", returnedMoney);
                 await invoice.update({
                   total,
                   remainingBalance: remainingBalance, //0
                   amountPaid: invoice.amountPaid - returnedMoney,
                 });
+
                 // if (returnedMoney > 0) {
                 //   await invoice.update({
                 //     amountPaid: invoice.amountPaid - returnedMoney,
@@ -267,8 +298,12 @@ exports.updateInvoice = async (req, res) => {
       const descriptions = returnedItems
         .map((item) => `${item.quantity} - ${item.name}`)
         .join(", ");
+      let amount = 0;
+      if (totalReturnedAmount > totalOFRemainder) {
+        amount = totalReturnedAmount - totalOFRemainder;
+      } else amount = totalOFRemainder - totalReturnedAmount;
       await DailyExpense.create({
-        amount: totalReturnedAmount,
+        amount: amount,
         expenseName: "مرتجع",
         description: descriptions,
       });
