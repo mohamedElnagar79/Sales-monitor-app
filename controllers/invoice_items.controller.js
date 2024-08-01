@@ -268,7 +268,7 @@ exports.calcDailySales = async (req, res, next) => {
       }
       return true; // Payment does not have a matching invoice
     });
-    console.log("oldPayments  =  =>", oldPayments.dataValues);
+    console.log("oldPayments  =  =>", oldPayments);
     const totalDailyExpense = dailyExpense.reduce(
       (sum, expense) => sum + parseFloat(expense.amount),
       0
