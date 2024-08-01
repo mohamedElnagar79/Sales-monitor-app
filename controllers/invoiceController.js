@@ -177,6 +177,7 @@ exports.updateInvoice = async (req, res) => {
     let totalReturnedAmount = 0;
     let returnedMoney = 0;
     let invoice_returns;
+    let invoice_returns_money_objects = [];
     const invoice = await Invoices.findByPk(invoiceId);
     let oldRemainder = invoice.remainingBalance;
     let totalOFRemainder = invoice.remainingBalance;
@@ -196,7 +197,7 @@ exports.updateInvoice = async (req, res) => {
 
           if (oldquantity < invoiceItem.quantity) {
             // Decrease product stock if client increases quantity
-            const newQuantity = invoiceItem.quantity - oldquantity;
+            const newQuantity = invoiceItem.quantity - oldquantity; //the num of items  user have increase
             const newStock = oldStock - newQuantity;
             await product.update({ stock: newStock });
           } else if (oldquantity > invoiceItem.quantity) {
@@ -211,26 +212,23 @@ exports.updateInvoice = async (req, res) => {
               productId: invoiceItem.productId,
             });
             let returnedItemPrice = newQuantity * invoiceItem.piecePrice;
-            if (returnedItemPrice > 0 && invoice) {
-              console.log("heloo000 ", returnedItemPrice);
-              let isUpdated = false;
-              let amount = 0;
-              // if (currentRemainder > returnedItemPrice) {
-              //   amount = currentRemainder - returnedItemPrice;
-              //   currentRemainder -= amount;
-              // } else {
-              //   amount = returnedItemPrice - currentRemainder;
-              //   currentRemainder = 0;
-              //   isUpdated = true;
-              // }
-              // console.log("oldRemainder ", oldRemainder);
+
+            let isUpdated = false;
+            let amount = 0;
+            // start of update and calc retures money
+            if (oldRemainder == 0) {
+              // case user has paid all money of invoice
               invoice_returns = await InvoiceReturnsMoney.create({
                 invoiceId,
                 clientId: invoice.clientId,
                 returned_money: returnedItemPrice,
               });
-              // oldRemainder = isUpdated ? 0 : oldRemainder;
-              // console.log("eeee ", oldRemainder);
+            } else {
+              invoice_returns_money_objects.push({
+                invoiceId,
+                clientId: invoice.clientId,
+                returned_money: returnedItemPrice,
+              });
             }
             // Add to returned items array
             returnedItems.push({
@@ -239,25 +237,11 @@ exports.updateInvoice = async (req, res) => {
             });
             totalReturnedAmount += newQuantity * invoiceItem.piecePrice;
           }
-          console.log("totalReturnedAmount ,,,,", totalReturnedAmount);
-          console.log("oldRemainder ,,,,", oldRemainder);
-          if (oldRemainder > 0) {
-            if (totalReturnedAmount < currentRemainder) {
-              await invoice_returns.update({
-                returned_money: currentRemainder - totalReturnedAmount,
-              });
-              currentRemainder = 0;
-            } else {
-              await invoice_returns.update({
-                returned_money: 0,
-              });
-              currentRemainder -= totalReturnedAmount;
-            }
-            console.log("invoice returns  ", invoice_returns.dataValues);
-          }
+          // get invoice items to calc toal
           const invoice_items = await InvoiceItems.findAll({
             where: { invoiceId: invoiceId },
           });
+          // here calc total of new items and update invoice
           if (invoice) {
             if (invoice_items.length > 0) {
               let total = 0;
@@ -290,6 +274,46 @@ exports.updateInvoice = async (req, res) => {
       } catch (error) {
         console.log(error);
         throw new Error(error);
+      }
+    }
+    // end of loop
+    console.log(
+      " oldRemainder :totalReturnedAmount ",
+      oldRemainder,
+      totalReturnedAmount
+    );
+    if (oldRemainder > 0) {
+      console.log("iam in first old if ", oldRemainder);
+      // case user has **not paid**  all money of invoice
+      if (oldRemainder > totalReturnedAmount) {
+        // ex R 500 T 200
+        invoice_returns = await InvoiceReturnsMoney.create({
+          invoiceId,
+          clientId: invoice.clientId,
+          returned_money: 0,
+        });
+      }
+      if (oldRemainder == totalReturnedAmount) {
+        invoice_returns = await InvoiceReturnsMoney.create({
+          invoiceId,
+          clientId: invoice.clientId,
+          returned_money: 0,
+        });
+      }
+      if (oldRemainder < totalReturnedAmount) {
+        // ex R 500 T 900
+        let total_returned_money = totalReturnedAmount - oldRemainder; //400
+        console.log("total_returned_money //30-", total_returned_money);
+        // we will create returns money for each item with ites product id
+        let isFirst = true;
+        for (const moneyObject of invoice_returns_money_objects) {
+          await InvoiceReturnsMoney.create({
+            invoiceId: moneyObject.invoiceId,
+            clientId: moneyObject.clientId.clientId,
+            returned_money: isFirst ? total_returned_money : 0,
+          });
+          isFirst = false;
+        }
       }
     }
 
