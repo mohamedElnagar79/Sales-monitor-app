@@ -13,7 +13,7 @@ const InvoiceItems = sequelize.define("invoice_items", {
     allowNull: false,
   },
   piecePrice: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: true,
   },
 });
