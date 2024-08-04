@@ -13,6 +13,7 @@ const DailyExpense = require("../models/Daily_expense.model");
 exports.getInvoices = async (req, res) => {
   try {
     const searchDate = req.query.date ? moment(req.query.date) : moment();
+    const searchPhone = req.query.phone;
 
     const startOfDay = searchDate.startOf("day").toDate();
     const endOfDay = searchDate.endOf("day").toDate();
@@ -20,10 +21,26 @@ exports.getInvoices = async (req, res) => {
     console.log("startOfDay: ", startOfDay);
     console.log("endOfDay: ", endOfDay);
 
+    let whereClause = {
+      createdAt: {
+        [Op.gte]: startOfDay,
+        [Op.lt]: endOfDay,
+      },
+    };
+
+    if (searchPhone) {
+      whereClause = {};
+      whereClause["$client.phone$"] = {
+        [Op.like]: `%${searchPhone}%`,
+      };
+    }
+    console.log("whereClause ==>", whereClause);
+
     const invoices = await Invoices.findAll({
       attributes: [
         "id",
         [Sequelize.col("client.name"), "clientName"],
+        [Sequelize.col("client.phone"), "clientPhone"],
         "total",
         "amountPaid",
         "remainingBalance",
@@ -47,18 +64,14 @@ exports.getInvoices = async (req, res) => {
           attributes: [],
         },
       ],
-
-      where: {
-        createdAt: {
-          [Op.gte]: startOfDay,
-          [Op.lt]: endOfDay,
-        },
-      },
+      where: whereClause,
       order: [["createdAt", "DESC"]],
     });
 
     invoices.map((item) => {
-      item.dataValues.createdAt = config.formatDate(item.dataValues.createdAt);
+      item.dataValues.createdAt = moment(item.dataValues.createdAt).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
     });
 
     return res.status(200).json({

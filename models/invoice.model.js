@@ -9,15 +9,15 @@ const Invoices = sequelize.define("invoices", {
     primaryKey: true,
   },
   total: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: false,
   },
   amountPaid: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: false,
   },
   remainingBalance: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: false,
   },
   comments: {
