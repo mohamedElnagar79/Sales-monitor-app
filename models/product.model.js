@@ -16,11 +16,11 @@ const Product = sequelize.define(
       unique: true,
     },
     price: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.DECIMAL(10, 2),
       allowNull: false,
     },
     soldPrice: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.DECIMAL(10, 2),
       allowNull: true,
     },
     stock: {

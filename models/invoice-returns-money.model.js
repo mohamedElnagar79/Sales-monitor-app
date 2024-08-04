@@ -11,7 +11,7 @@ const InvoiceReturnsMoney = sequelize.define(
       primaryKey: true,
     },
     returned_money: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.DECIMAL(10, 2),
       allowNull: true,
     },
     deletedAt: {

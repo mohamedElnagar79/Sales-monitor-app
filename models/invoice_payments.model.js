@@ -9,15 +9,15 @@ const IvoicePayments = sequelize.define("ivoice_payments", {
     primaryKey: true,
   },
   total: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: true,
   },
   amountPaid: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: false,
   },
   remaining: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.DECIMAL(10, 2),
     allowNull: false,
   },
   comments: {
