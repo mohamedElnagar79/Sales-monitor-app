@@ -41,6 +41,7 @@ exports.createNewInvoice = async (req, res, next) => {
       amountPaid,
       remainingBalance: 0,
       comments,
+      userId: +req.id,
     });
     invoiceId = newInvoice.dataValues.id;
     // loop at Invoice Item and create one

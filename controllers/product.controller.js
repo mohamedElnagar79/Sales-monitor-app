@@ -1,23 +1,17 @@
 const Product = require("../models/product.model");
 const config = require("../config/middlewares");
-const { Op, Sequelize } = require("sequelize");
+const { Op, Sequelize, sql } = require("sequelize");
+// const sql = require("@sequelize/core");
 
 exports.createNewProduct = async (req, res) => {
-  const { name, price, soldPrice, stock, description } = req.body;
+  const { name, price, soldPrice, stock, min_stock, description } = req.body;
   try {
-    // if (req.role != "admin") {
-    //   console.log("req.role   ", req.role);
-    //   res.status(403).json({
-    //     status_code: 403,
-    //     data: null,
-    //     message: "you are forbidden to update this resources",
-    //   });
-    // }
     const newProduct = await Product.create({
       name,
       price,
       soldPrice: soldPrice ? soldPrice : price,
       stock,
+      min_stock,
       description,
     });
     if (newProduct) {
@@ -38,25 +32,46 @@ exports.createNewProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
-    if (req.role != "admin") {
-      res.status(403).json({
+    if (req.role !== "admin") {
+      return res.status(403).json({
         status_code: 403,
         data: null,
         message: "you are forbidden to update this resources",
       });
     }
+
     let limit = req.query.rows ? +req.query.rows : 8;
     let offset = req.query.page ? (req.query.page - 1) * limit : 0;
-
+    let min_stock = req.query.min_stock;
+    let out_of_stock = req.query.out_of_stock;
+    let max_of_stock = req.query.max_of_stock;
     const search = req.query.search;
-    const whereClause = search
-      ? {
-          name: {
-            [Op.like]: `%${search}%`,
-          },
-        }
-      : {};
-    console.log("where ", whereClause);
+    let whereClause = {};
+    let orderClause = [["createdAt", "DESC"]];
+    if (out_of_stock) {
+      console.log("heloooo");
+      whereClause.stock = {
+        [Op.eq]: 0,
+      };
+    }
+    if (max_of_stock) {
+      console.log("max stock");
+      orderClause = [["stock", "DESC"]];
+    }
+    if (min_stock) {
+      console.log("min_stock ", min_stock);
+      whereClause.stock = {
+        [Op.lte]: Sequelize.col("min_stock"),
+      };
+    }
+
+    if (search) {
+      whereClause.name = {
+        [Op.like]: `%${search}%`,
+      };
+    }
+    console.log("whereClause ", whereClause);
+
     const products = await Product.findAndCountAll({
       attributes: [
         "id",
@@ -64,16 +79,18 @@ exports.getAllProducts = async (req, res) => {
         "price",
         "soldPrice",
         "stock",
+        "min_stock",
         "createdAt",
         "updatedAt",
         "description",
       ],
-      order: [["createdAt", "DESC"]],
+      order: orderClause,
       limit,
       offset,
       where: whereClause,
     });
-    products.rows.map((product) => {
+
+    products.rows.forEach((product) => {
       product.dataValues.createdAt = config.formatDate(
         product.dataValues.createdAt
       );
