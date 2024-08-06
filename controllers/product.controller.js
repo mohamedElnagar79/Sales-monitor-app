@@ -3,21 +3,14 @@ const config = require("../config/middlewares");
 const { Op, Sequelize } = require("sequelize");
 
 exports.createNewProduct = async (req, res) => {
-  const { name, price, soldPrice, stock, description } = req.body;
+  const { name, price, soldPrice, stock, min_stock, description } = req.body;
   try {
-    // if (req.role != "admin") {
-    //   console.log("req.role   ", req.role);
-    //   res.status(403).json({
-    //     status_code: 403,
-    //     data: null,
-    //     message: "you are forbidden to update this resources",
-    //   });
-    // }
     const newProduct = await Product.create({
       name,
       price,
       soldPrice: soldPrice ? soldPrice : price,
       stock,
+      min_stock,
       description,
     });
     if (newProduct) {
@@ -64,6 +57,7 @@ exports.getAllProducts = async (req, res) => {
         "price",
         "soldPrice",
         "stock",
+        "min_stock",
         "createdAt",
         "updatedAt",
         "description",

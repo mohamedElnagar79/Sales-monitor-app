@@ -36,6 +36,13 @@ exports.productValidationAdd = [
     .withMessage("stock must be a number")
     .isLength({ max: 191 })
     .withMessage("stock must be less than 191 characters long"),
+  body("min_stock")
+    .notEmpty()
+    .withMessage("min_stock is required")
+    .isNumeric()
+    .withMessage("min_stock must be a number")
+    .isLength({ max: 191 })
+    .withMessage("min_stock must be less than 191 characters long"),
   body("description")
     .optional()
     .isString()
