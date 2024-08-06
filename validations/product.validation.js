@@ -111,6 +111,18 @@ exports.getAllProductsValidation = [
     .withMessage("rows must be anumber")
     .isLength({ min: 0, max: 10 })
     .withMessage("rows length must be less than 10 characters long"),
+  query("out_of_stock")
+    .optional()
+    .isBoolean()
+    .withMessage("out_of_stock must be true or false"),
+  query("maxt_of_stock")
+    .optional()
+    .isBoolean()
+    .withMessage("maxt_of_stock must be true or false"),
+  query("min_stock")
+    .optional()
+    .isBoolean()
+    .withMessage("min_stock must be true or false"),
 ];
 exports.validateDeleteOneProduct = [
   param("id")
