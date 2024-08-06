@@ -27,6 +27,10 @@ const Product = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: true,
     },
+    min_stock: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
     description: {
       type: Sequelize.STRING(225),
       allowNull: false,
