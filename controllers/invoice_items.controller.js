@@ -313,6 +313,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
     const id = req.params.id;
     let returnedMoney = 0;
     let productName;
+    let invoice;
     const invoiceItem = await InvoiceItems.findByPk(id);
     if (invoiceItem) {
       console.log("invoice item ", invoiceItem.dataValues);
@@ -346,7 +347,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
           invoiceId: invoiceItem.dataValues.invoiceId,
         },
       });
-      const invoice = await Invoices.findByPk(invoiceItem.dataValues.invoiceId);
+      invoice = await Invoices.findByPk(invoiceItem.dataValues.invoiceId);
       if (invoice) {
         if (invoice_items.length > 0) {
           console.log("there is another items ===>>>", invoice_items);
@@ -400,9 +401,14 @@ exports.deleteInvoiceItem = async (req, res, next) => {
     }
     if (returnedMoney != 0) {
       let deletedQuantity = invoiceItem.dataValues.quantity;
+      const today = new Date();
+      invoice.dataValues.createdAt.setUTCHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
+      const isEqual =
+        invoice.dataValues.createdAt.getTime() === today.getTime();
       await DailyExpense.create({
         amount: returnedMoney,
-        expenseName: "مرتجع",
+        expenseName: isEqual ? "مرتجع من فاتورة اليوم" : "مرتجع فاتورة قديمة",
         description:
           deletedQuantity > 1
             ? `${deletedQuantity} - ` + productName
