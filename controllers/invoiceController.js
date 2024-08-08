@@ -190,15 +190,19 @@ exports.updateInvoice = async (req, res) => {
     let totalReturnedAmount = 0;
     let returnedMoney = 0;
     let invoice_returns;
+    let price_changed = false;
     let invoice_returns_money_objects = [];
     const invoice = await Invoices.findByPk(invoiceId);
+    console.log("invoiiiii ", invoice.dataValues);
     let oldRemainder = invoice.remainingBalance;
     let totalOFRemainder = invoice.remainingBalance;
     if (updatedinvoiceItems.length > 0) {
+      console.log("updatedinvoiceItems --- ", updatedinvoiceItems);
       for (const invoiceItem of updatedinvoiceItems) {
         try {
           const item = await InvoiceItems.findByPk(invoiceItem.id);
           const oldquantity = item.dataValues.quantity;
+          const oldPiecePrice = item.dataValues.piecePrice;
           let currentRemainder = oldRemainder;
           await item.update({
             quantity: invoiceItem.quantity,
@@ -210,11 +214,13 @@ exports.updateInvoice = async (req, res) => {
             const oldStock = product.dataValues.stock;
 
             if (oldquantity < invoiceItem.quantity) {
+              console.log("quantity changed ===>");
               // Decrease product stock if client increases quantity
               const newQuantity = invoiceItem.quantity - oldquantity; //the num of items  user have increase
               const newStock = oldStock - newQuantity;
               await product.update({ stock: newStock });
             } else if (oldquantity > invoiceItem.quantity) {
+              console.log("-=-=--=-= quantity changed ===>=-=");
               // Increase product stock if user returns some items
               const newQuantity = oldquantity - invoiceItem.quantity;
               const newStock = oldStock + newQuantity;
@@ -255,6 +261,18 @@ exports.updateInvoice = async (req, res) => {
             const invoice_items = await InvoiceItems.findAll({
               where: { invoiceId: invoiceId },
             });
+            if (oldPiecePrice != invoiceItem.piecePrice) {
+              console.log("totalReturnedAmount ==== ", totalReturnedAmount);
+              if (oldPiecePrice > invoiceItem.piecePrice && oldRemainder == 0) {
+                // await InvoiceReturnsMoney.create({
+                //   invoiceId,
+                //   clientId: invoice.clientId,
+                //   returned_money: oldPiecePrice - invoiceItem.piecePrice,
+                // });
+                price_changed = true;
+                totalReturnedAmount += oldPiecePrice - invoiceItem.piecePrice;
+              }
+            }
             // here calc total of new items and update invoice
             if (invoice) {
               if (invoice_items.length > 0) {
@@ -275,7 +293,19 @@ exports.updateInvoice = async (req, res) => {
                     remainingBalance: remainingBalance, //0
                     amountPaid: invoice.amountPaid - returnedMoney,
                   });
-
+                  if (returnedMoney && price_changed) {
+                    console.log("=====> iam running now <====== ");
+                    await InvoiceReturnsMoney.create({
+                      invoiceId,
+                      clientId: invoice.clientId,
+                      returned_money: returnedMoney,
+                    });
+                    await DailyExpense.create({
+                      amount: returnedMoney,
+                      expenseName: "فرق سعر",
+                      description: `تم تعديل سعر الفاتورة إلى سعر أقل`,
+                    });
+                  }
                   // if (returnedMoney > 0) {
                   //   await invoice.update({
                   //     amountPaid: invoice.amountPaid - returnedMoney,
@@ -290,6 +320,7 @@ exports.updateInvoice = async (req, res) => {
           throw new Error(error);
         }
       }
+
       // end of loop
       if (oldRemainder > 0) {
         console.log("iam in first old if ", oldRemainder);
@@ -335,9 +366,16 @@ exports.updateInvoice = async (req, res) => {
       if (totalReturnedAmount > totalOFRemainder) {
         amount = totalReturnedAmount - totalOFRemainder;
       } else amount = totalOFRemainder - totalReturnedAmount;
+      const today = new Date();
+      invoice.dataValues.createdAt.setUTCHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
+      const isEqual =
+        invoice.dataValues.createdAt.getTime() === today.getTime();
+      console.log("isEqual ", isEqual, today, invoice.dataValues.createdAt);
+
       await DailyExpense.create({
         amount: amount,
-        expenseName: "مرتجع",
+        expenseName: isEqual ? "مرتجع من فاتورة اليوم" : "مرتجع فاتورة قديمة",
         description: descriptions,
       });
     }

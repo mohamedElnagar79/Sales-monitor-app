@@ -263,18 +263,27 @@ exports.calcDailySales = async (req, res, next) => {
     );
     const oldPayments = invoice_payments.filter((payment) => {
       for (const invoice of invoices) {
-        if (invoice.id === payment.invoiceId) {
+        if (invoice.id === payment.invoiceId || payment.invoiceId == null) {
           return false; // Payment has a matching invoice
         }
       }
+      if (payment.dataValues.invoiceId == null) {
+        return false;
+      }
       return true; // Payment does not have a matching invoice
     });
-    console.log("oldPayments  =  =>", oldPayments);
     const totalDailyExpense = dailyExpense.reduce(
       (sum, expense) => sum + parseFloat(expense.amount),
       0
     );
-    dailyExpense.map((outgoing) => {
+    const newDailyExpense = dailyExpense.filter((outgoing) => {
+      if (outgoing.dataValues.expenseName == "مرتجع من فاتورة اليوم") {
+        return false;
+      } else {
+        return true;
+      }
+    });
+    newDailyExpense.map((outgoing) => {
       outgoing.description = config.truncateText(outgoing.description, 50);
     });
     invoices.map((invoice) => {
@@ -282,8 +291,6 @@ exports.calcDailySales = async (req, res, next) => {
         invoice.dataValues.updatedAt
       ).format("DD/MM/YYYY");
     });
-    console.log("totalAmountPaid ==> ", totalAmountPaid);
-    console.log("Daily_expense ==> ", totalDailyExpense);
 
     const totalExistMoney = totalAmountPaid - totalDailyExpense;
 
@@ -291,7 +298,7 @@ exports.calcDailySales = async (req, res, next) => {
       status_code: 200,
       data: {
         invoices,
-        dailyExpense,
+        dailyExpense: newDailyExpense,
         totalAmountPaid,
         oldPayments,
         totalDailyExpense,
@@ -313,6 +320,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
     const id = req.params.id;
     let returnedMoney = 0;
     let productName;
+    let invoice;
     const invoiceItem = await InvoiceItems.findByPk(id);
     if (invoiceItem) {
       console.log("invoice item ", invoiceItem.dataValues);
@@ -346,7 +354,7 @@ exports.deleteInvoiceItem = async (req, res, next) => {
           invoiceId: invoiceItem.dataValues.invoiceId,
         },
       });
-      const invoice = await Invoices.findByPk(invoiceItem.dataValues.invoiceId);
+      invoice = await Invoices.findByPk(invoiceItem.dataValues.invoiceId);
       if (invoice) {
         if (invoice_items.length > 0) {
           console.log("there is another items ===>>>", invoice_items);
@@ -400,9 +408,14 @@ exports.deleteInvoiceItem = async (req, res, next) => {
     }
     if (returnedMoney != 0) {
       let deletedQuantity = invoiceItem.dataValues.quantity;
+      const today = new Date();
+      invoice.dataValues.createdAt.setUTCHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
+      const isEqual =
+        invoice.dataValues.createdAt.getTime() === today.getTime();
       await DailyExpense.create({
         amount: returnedMoney,
-        expenseName: "مرتجع",
+        expenseName: isEqual ? "مرتجع من فاتورة اليوم" : "مرتجع فاتورة قديمة",
         description:
           deletedQuantity > 1
             ? `${deletedQuantity} - ` + productName
