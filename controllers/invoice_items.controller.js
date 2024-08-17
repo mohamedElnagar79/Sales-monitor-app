@@ -263,18 +263,27 @@ exports.calcDailySales = async (req, res, next) => {
     );
     const oldPayments = invoice_payments.filter((payment) => {
       for (const invoice of invoices) {
-        if (invoice.id === payment.invoiceId) {
+        if (invoice.id === payment.invoiceId || payment.invoiceId == null) {
           return false; // Payment has a matching invoice
         }
       }
+      if (payment.dataValues.invoiceId == null) {
+        return false;
+      }
       return true; // Payment does not have a matching invoice
     });
-    console.log("oldPayments  =  =>", oldPayments);
     const totalDailyExpense = dailyExpense.reduce(
       (sum, expense) => sum + parseFloat(expense.amount),
       0
     );
-    dailyExpense.map((outgoing) => {
+    const newDailyExpense = dailyExpense.filter((outgoing) => {
+      if (outgoing.dataValues.expenseName == "مرتجع من فاتورة اليوم") {
+        return false;
+      } else {
+        return true;
+      }
+    });
+    newDailyExpense.map((outgoing) => {
       outgoing.description = config.truncateText(outgoing.description, 50);
     });
     invoices.map((invoice) => {
@@ -282,8 +291,6 @@ exports.calcDailySales = async (req, res, next) => {
         invoice.dataValues.updatedAt
       ).format("DD/MM/YYYY");
     });
-    console.log("totalAmountPaid ==> ", totalAmountPaid);
-    console.log("Daily_expense ==> ", totalDailyExpense);
 
     const totalExistMoney = totalAmountPaid - totalDailyExpense;
 
@@ -291,7 +298,7 @@ exports.calcDailySales = async (req, res, next) => {
       status_code: 200,
       data: {
         invoices,
-        dailyExpense,
+        dailyExpense: newDailyExpense,
         totalAmountPaid,
         oldPayments,
         totalDailyExpense,
