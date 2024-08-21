@@ -206,14 +206,13 @@ exports.getUserInfoForSettings = async (req, res) => {
 exports.updateUserAccount = async (req, res) => {
   try {
     const { name, email, file_name } = req.body;
-    console.log("file_name ", file_name);
     let avatar = req.body.avatar;
     const id = +req.id;
 
     const user = await User.findByPk(id);
     if (user != null) {
       let oldAvatar = user.dataValues.avatar;
-      if (avatar) {
+      if (avatar && file_name) {
         let avatarObj = imgMw.uploadFilesAndPdf(avatar, file_name, "users");
         avatar = avatarObj[0].fileName;
       }
