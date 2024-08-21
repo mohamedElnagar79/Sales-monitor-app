@@ -177,13 +177,11 @@ exports.getUserInfoForSettings = async (req, res) => {
       where: {
         id: id,
       },
-      attributes: ["id", "name", "email", "avatar"],
+      attributes: ["name", "email", "avatar", "role"],
     });
     if (user != null) {
       const avatar = user.dataValues.avatar;
-      user.dataValues.avatar = config.checkAttachmentType(avatar)
-        ? usersPath + avatar
-        : avatar;
+      user.dataValues.avatar = Users_path + avatar;
       return res.status(200).json({
         status_code: 200,
         data: user,
@@ -208,24 +206,24 @@ exports.getUserInfoForSettings = async (req, res) => {
 exports.updateUserAccount = async (req, res) => {
   try {
     const { name, email, file_name } = req.body;
+    console.log("file_name ", file_name);
     let avatar = req.body.avatar;
     const id = +req.id;
 
     const user = await User.findByPk(id);
     if (user != null) {
       let oldAvatar = user.dataValues.avatar;
-      if (avatar && file_name) {
+      if (avatar) {
         let avatarObj = imgMw.uploadFilesAndPdf(avatar, file_name, "users");
         avatar = avatarObj[0].fileName;
       }
       await user.update({
         name: name,
         email: email,
-        avatar: avatar,
-        role: role,
+        avatar: avatar ? avatar : oldAvatar,
       });
-      let isImage = config.checkAttachmentType(avatar) ? true : false;
-      if (isImage) {
+      let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
+      if (isImage && oldAvatar != "defaultUser.png") {
         imagePath = `${usersPath}${oldAvatar}`;
         fs.unlink(imagePath, (error) => {
           if (error) {
@@ -239,7 +237,6 @@ exports.updateUserAccount = async (req, res) => {
         avatar: isImage
           ? `${Users_path}${user.dataValues.avatar}`
           : user.dataValues.avatar,
-        role: role,
       };
       // user.dataValues.id;
       return res.status(200).json({

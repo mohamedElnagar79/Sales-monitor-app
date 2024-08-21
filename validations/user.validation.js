@@ -75,16 +75,12 @@ exports.validateHash = [
 exports.validateUpdateUserAccount = [
   body("name")
     .optional()
-    .notEmpty()
-    .withMessage("name is required")
     .isString()
     .withMessage("name must be a string")
     .isLength({ max: 191 })
-    .withMessage("userName must be less than 191 characters long"),
+    .withMessage("name must be less than 191 characters long"),
   body("email")
     .optional()
-    .notEmpty()
-    .withMessage("email is required")
     .isEmail()
     .withMessage("email must be a valid email")
     .isLength({ max: 191 })
@@ -102,7 +98,6 @@ exports.validateUpdateUserAccount = [
         },
       });
       if (user) {
-        console.log("===== user", user);
         return Promise.reject("E-mail is already in use");
       }
     }),
