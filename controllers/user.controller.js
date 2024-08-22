@@ -314,7 +314,7 @@ exports.updateUserPassword = async (req, res) => {
           return res.status(400).json({
             status_code: 400,
             data: null,
-            message: "Incorrect Password",
+            message: "Old Password Incorrect ",
           });
         }
         await bcrypt.hash(newPassword, 10).then(async (hashedPass) => {
