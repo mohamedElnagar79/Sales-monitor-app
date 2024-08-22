@@ -56,9 +56,11 @@ exports.uploadFilesAndPdf = (data, filesnames, path) => {
         if (!files_extensions.includes(extension)) {
           throw new Error(`${getMyLang().__("invalidExtension")}`);
         }
+        console.log("filesnames");
         let fileName = `${filesnames[index]}-${
           (new Date().getTime() / 1000) | 0
         }${index}.${extension}`;
+        fileName.replaceAll(" ", "-");
         try {
           fs.writeFileSync(
             `${process.cwd()}/public/${
