@@ -32,9 +32,7 @@ module.exports.login = async (req, res, next) => {
               process.env.secret,
               { expiresIn: expire_date }
             );
-            user.avatar = config.checkAttachmentType(user.avatar)
-              ? Users_path + user.avatar
-              : user.avatar;
+            user.avatar = Users_path + user.avatar;
             return res.status(200).json({
               status_code: 200,
               data: {
