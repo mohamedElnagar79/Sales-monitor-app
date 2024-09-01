@@ -39,5 +39,6 @@ router
     config.mwError,
     userController.updateUserPassword
   );
+router.route("/get-all-users").get(config.auth, userController.getAllUsers);
 
 module.exports = router;

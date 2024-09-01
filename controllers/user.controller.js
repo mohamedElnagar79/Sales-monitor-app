@@ -6,6 +6,7 @@ const usersPath = process.cwd() + "/public/images/users/";
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const config = require("../config/middlewares.js");
+const { Op } = require("sequelize");
 
 exports.createNewUser = async (req, res, next) => {
   const { name, email, password, avatar, role, hash, file_name } = req.body;
@@ -340,6 +341,31 @@ exports.updateUserPassword = async (req, res) => {
       status_code: 500,
       data: null,
       message: `serverError`,
+    });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  const userId = +req.id;
+  try {
+    const users = await User.findAll({
+      where: {
+        id: {
+          [Op.ne]: userId,
+        },
+      },
+      attributes: ["id", "name", "email", "role"],
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: users,
+      message: "ok",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
     });
   }
 };
