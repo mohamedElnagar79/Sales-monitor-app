@@ -206,10 +206,10 @@ exports.getUserInfoForSettings = async (req, res) => {
 
 exports.updateUserAccount = async (req, res) => {
   try {
-    const { name, email, file_name } = req.body;
+    const { name, email, file_name, userId, role } = req.body;
     let avatar = req.body.avatar;
-    const id = +req.id;
-
+    let id = +req.id;
+    id = userId ? userId : id;
     const user = await User.findByPk(id);
     if (user != null) {
       let oldAvatar = user.dataValues.avatar;
@@ -218,8 +218,9 @@ exports.updateUserAccount = async (req, res) => {
         avatar = avatarObj[0].fileName;
       }
       await user.update({
-        name: name,
-        email: email,
+        name,
+        role,
+        email,
         avatar: avatar ? avatar : oldAvatar,
       });
       let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
@@ -231,17 +232,9 @@ exports.updateUserAccount = async (req, res) => {
           }
         });
       }
-      const userData = {
-        name: user.dataValues.name,
-        email: user.dataValues.email,
-        avatar: isImage
-          ? `${Users_path}${user.dataValues.avatar}`
-          : user.dataValues.avatar,
-      };
-      // user.dataValues.id;
       return res.status(200).json({
         status_code: 200,
-        data: { user: userData },
+        data: null,
         message: "success",
       });
     } else {
