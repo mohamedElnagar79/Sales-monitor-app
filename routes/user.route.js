@@ -12,7 +12,12 @@ const {
 
 router
   .route("/sign-up")
-  .post(userValidationAdd, config.mwError, userController.createNewUser);
+  .post(
+    config.auth,
+    userValidationAdd,
+    config.mwError,
+    userController.createNewUser
+  );
 
 router
   .route("/my-profile")
