@@ -21,7 +21,7 @@ exports.createNewUser = async (req, res, next) => {
         email: email,
         password: hashedPass,
         avatar: avatar ? avatarObj[0].fileName : "defaultUser.png",
-        role: "user",
+        role: role ? role : "user",
       });
       if (user == null) {
       } else {
