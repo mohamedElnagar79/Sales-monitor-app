@@ -214,8 +214,19 @@ exports.updateUserAccount = async (req, res) => {
     if (user != null) {
       let oldAvatar = user.dataValues.avatar;
       if (avatar && file_name) {
+        console.log("is in is in is in is in =><><<<<<><<<><><><>>");
         let avatarObj = imgMw.uploadFilesAndPdf(avatar, file_name, "users");
         avatar = avatarObj[0].fileName;
+
+        let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
+        if (isImage && oldAvatar != "defaultUser.png") {
+          imagePath = `${usersPath}${oldAvatar}`;
+          fs.unlink(imagePath, (error) => {
+            if (error) {
+              throw new Error(error);
+            }
+          });
+        }
       }
       await user.update({
         name,
@@ -223,15 +234,6 @@ exports.updateUserAccount = async (req, res) => {
         email,
         avatar: avatar ? avatar : oldAvatar,
       });
-      let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
-      if (isImage && oldAvatar != "defaultUser.png") {
-        imagePath = `${usersPath}${oldAvatar}`;
-        fs.unlink(imagePath, (error) => {
-          if (error) {
-            throw new Error(error);
-          }
-        });
-      }
       return res.status(200).json({
         status_code: 200,
         data: null,
