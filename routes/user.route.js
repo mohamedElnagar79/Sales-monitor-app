@@ -12,7 +12,12 @@ const {
 
 router
   .route("/sign-up")
-  .post(userValidationAdd, config.mwError, userController.createNewUser);
+  .post(
+    config.auth,
+    userValidationAdd,
+    config.mwError,
+    userController.createNewUser
+  );
 
 router
   .route("/my-profile")
@@ -39,5 +44,6 @@ router
     config.mwError,
     userController.updateUserPassword
   );
+router.route("/get-all-users").get(config.auth, userController.getAllUsers);
 
 module.exports = router;
