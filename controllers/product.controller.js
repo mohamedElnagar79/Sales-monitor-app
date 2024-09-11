@@ -114,7 +114,7 @@ exports.getAllProducts = async (req, res) => {
 };
 
 exports.updateOneProduct = async (req, res, next) => {
-  const { name, price, soldPrice, stock, description } = req.body;
+  const { name, price, soldPrice, stock, description, min_stock } = req.body;
   const productId = +req.params.id;
   try {
     // if (req.role != "admin") {
@@ -132,6 +132,7 @@ exports.updateOneProduct = async (req, res, next) => {
         soldPrice: soldPrice,
         stock,
         description,
+        min_stock,
       });
       return res.status(200).json({
         status_code: 200,

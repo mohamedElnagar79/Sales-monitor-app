@@ -42,10 +42,7 @@ exports.userValidationAdd = [
     .optional()
     .isString()
     .withMessage("avatar must be only string"),
-  body("file_name")
-    .optional()
-    .isString()
-    .withMessage("filename must be only string"),
+  body("id").optional().isNumeric().withMessage("id must be only a number"),
   body("role")
     .optional()
     .isIn(["admin", "user"])
@@ -88,7 +85,8 @@ exports.validateUpdateUserAccount = [
   check("email")
     .optional()
     .custom(async (value, req) => {
-      const id = +req.req.id;
+      let id = +req.req.id;
+      id = req.req.body.userId ? req.req.body.userId : id;
       const user = await User.findOne({
         where: {
           id: {
@@ -109,6 +107,16 @@ exports.validateUpdateUserAccount = [
     .optional()
     .isString()
     .withMessage("filename must be only string"),
+  body("role")
+    .optional()
+    .isIn(["admin", "user"])
+    .withMessage("role is must be only admin or member")
+    .isString()
+    .withMessage("role must be only string"),
+  body("userId")
+    .optional()
+    .isNumeric()
+    .withMessage("userId must be only a number"),
 ];
 
 exports.validateUpdateUserPassword = [

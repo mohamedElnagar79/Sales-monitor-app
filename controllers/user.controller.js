@@ -6,6 +6,7 @@ const usersPath = process.cwd() + "/public/images/users/";
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const config = require("../config/middlewares.js");
+const { Op } = require("sequelize");
 
 exports.createNewUser = async (req, res, next) => {
   const { name, email, password, avatar, role, hash, file_name } = req.body;
@@ -20,7 +21,7 @@ exports.createNewUser = async (req, res, next) => {
         email: email,
         password: hashedPass,
         avatar: avatar ? avatarObj[0].fileName : "defaultUser.png",
-        role: "user",
+        role: role ? role : "user",
       });
       if (user == null) {
       } else {
@@ -205,42 +206,37 @@ exports.getUserInfoForSettings = async (req, res) => {
 
 exports.updateUserAccount = async (req, res) => {
   try {
-    const { name, email, file_name } = req.body;
+    const { name, email, file_name, userId, role } = req.body;
     let avatar = req.body.avatar;
-    const id = +req.id;
-
+    let id = +req.id;
+    id = userId ? userId : id;
     const user = await User.findByPk(id);
     if (user != null) {
       let oldAvatar = user.dataValues.avatar;
       if (avatar && file_name) {
+        console.log("is in is in is in is in =><><<<<<><<<><><><>>");
         let avatarObj = imgMw.uploadFilesAndPdf(avatar, file_name, "users");
         avatar = avatarObj[0].fileName;
+
+        let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
+        if (isImage && oldAvatar != "defaultUser.png") {
+          imagePath = `${usersPath}${oldAvatar}`;
+          fs.unlink(imagePath, (error) => {
+            if (error) {
+              throw new Error(error);
+            }
+          });
+        }
       }
       await user.update({
-        name: name,
-        email: email,
+        name,
+        role,
+        email,
         avatar: avatar ? avatar : oldAvatar,
       });
-      let isImage = config.checkAttachmentType(oldAvatar) ? true : false;
-      if (isImage && oldAvatar != "defaultUser.png") {
-        imagePath = `${usersPath}${oldAvatar}`;
-        fs.unlink(imagePath, (error) => {
-          if (error) {
-            throw new Error(error);
-          }
-        });
-      }
-      const userData = {
-        name: user.dataValues.name,
-        email: user.dataValues.email,
-        avatar: isImage
-          ? `${Users_path}${user.dataValues.avatar}`
-          : user.dataValues.avatar,
-      };
-      // user.dataValues.id;
       return res.status(200).json({
         status_code: 200,
-        data: { user: userData },
+        data: null,
         message: "success",
       });
     } else {
@@ -340,6 +336,31 @@ exports.updateUserPassword = async (req, res) => {
       status_code: 500,
       data: null,
       message: `serverError`,
+    });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  const userId = +req.id;
+  try {
+    const users = await User.findAll({
+      where: {
+        id: {
+          [Op.ne]: userId,
+        },
+      },
+      attributes: ["id", "name", "email", "role"],
+    });
+    return res.status(200).json({
+      status_code: 200,
+      data: users,
+      message: "ok",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status_code: 500,
+      data: null,
+      message: error.message,
     });
   }
 };
