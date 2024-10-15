@@ -25,10 +25,15 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   doc.fontSize(25).text("Invoice", { align: "center" });
   doc.moveDown();
 
-  // Define the margin and line color
-  const marginBeforeTable = 40; // Increase margin before the table
+  // Define styles
   const headerColor = "#f0f0f0"; // Background color for the header
   const rowHeight = 30; // Height for both the header and rows
+  const paddingLeft = 5; // Padding for the "Items" column
+
+  // Dynamically calculate starting Y position to center the table vertically
+  const totalTableHeight = rowHeight * (newInvoiceItems.length + 1); // Header + rows
+  const pageHeight = doc.page.height;
+  const startY = (pageHeight - totalTableHeight) / 2;
 
   // Invoice info with increased font size
   doc.fontSize(18).text(`Invoice ID: ${invoiceData.id}`);
@@ -41,28 +46,38 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   doc.fontSize(18).moveDown();
 
   // Draw table header with the same height as table rows
-  doc.rect(50, 210, 500, rowHeight).fill(headerColor);
+  doc.rect(50, startY, 500, rowHeight).fill(headerColor);
 
   // Set header text style with correct vertical alignment
   doc.fontSize(14).fillColor("black");
-  doc.text("Items", 50, 210 + (rowHeight - 14) / 2); // Adjust to center vertically
-  doc.text("Quantity", 250, 210 + (rowHeight - 14) / 2);
-  doc.text("Price", 350, 210 + (rowHeight - 14) / 2);
-  doc.text("Total", 450, 210 + (rowHeight - 14) / 2);
+  doc.text("Items", 50 + paddingLeft, startY + (rowHeight - 14) / 2); // Adjust for padding
+  doc.text("Quantity", 250, startY + (rowHeight - 14) / 2);
+  doc.text("Price", 350, startY + (rowHeight - 14) / 2);
+  doc.text("Total", 450, startY + (rowHeight - 14) / 2);
 
-  let y = 210 + rowHeight; // Starting y position for the table rows
+  let y = startY + rowHeight; // Starting y position for the table rows
 
   // Loop through the items to add them to the table
   newInvoiceItems.forEach((item) => {
     // Draw a border for each row
     doc.rect(50, y, 500, rowHeight).stroke();
 
-    // Set row text style and center vertically
+    // Set row text style and center vertically, with padding for "Items"
     doc.fillColor("black");
-    doc.text(item.productName, 50, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
-    doc.text(item.quantity, 250, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
-    doc.text(item.piecePrice, 350, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
-    doc.text(item.quantity * item.piecePrice, 450, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
+    doc.text(item.productName, 50 + paddingLeft, y + (rowHeight - 14) / 2); // Apply padding to "Items" column
+    doc.text(item.quantity, 250, y + (rowHeight - 14) / 2);
+    doc.text(
+      isNaN(item.piecePrice) ? item.piecePrice : item.piecePrice,
+      350,
+      y + (rowHeight - 14) / 2
+    );
+    doc.text(
+      isNaN(item.quantity * item.piecePrice)
+        ? item.quantity * item.piecePrice
+        : (item.quantity * item.piecePrice).toFixed(2),
+      450,
+      y + (rowHeight - 14) / 2
+    );
 
     y += rowHeight; // Move to the next row
   });
@@ -71,7 +86,7 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   doc.moveTo(50, y).lineTo(550, y).stroke();
 
   // Draw border around the entire table
-  doc.rect(50, 210, 500, y - 210).stroke();
+  doc.rect(50, startY, 500, y - startY).stroke();
 
   // Add total, amount paid, and remainder
   y += 30;
