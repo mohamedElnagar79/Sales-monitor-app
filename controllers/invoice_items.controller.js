@@ -9,6 +9,7 @@ const Invoices = require("../models/invoice.model");
 const IvoicePayments = require("../models/invoice_payments.model");
 const Returns = require("../models/returns.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
+
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
@@ -23,6 +24,10 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   // Invoice title
   doc.fontSize(25).text("Invoice", { align: "center" });
+  doc.moveDown();
+
+  // Add brand name at the top
+  doc.fontSize(18).text("Computer World Elnagar", { align: "left" });
   doc.moveDown();
 
   // Define styles
@@ -88,13 +93,36 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   // Draw border around the entire table
   doc.rect(50, startY, 500, y - startY).stroke();
 
-  // Add total, amount paid, and remainder
-  y += 30;
-  doc.text(`Total: ${invoiceData.total}`, 400, y);
-  y += 20;
-  doc.text(`Amount Paid: ${invoiceData.amountPaid}`, 400, y);
-  y += 20;
-  doc.text(`Remainder: ${invoiceData.total - invoiceData.amountPaid}`, 400, y);
+  // Calculate bottom margin, fit all elements within the last 15% of the page
+  const bottomMarginY = pageHeight * 0.79; // Start at 72% down the page
+  const spacing = 15; // Space between sections
+
+  y = bottomMarginY;
+
+  // Add total on the left
+  doc.fontSize(14).text(`Total: ${invoiceData.total}  EGP`, 375, y);
+  y += spacing;
+
+  // Move "Amount Paid" and "Remainder" to the right
+  doc.text(`Paid: ${invoiceData.amountPaid} EGP`, 375, y);
+  y += spacing;
+  doc.text(
+    `Remainder: ${invoiceData.total - invoiceData.amountPaid}  EGP`,
+    375,
+    y
+  );
+
+  // Add margin (2rem ~ 32px) before the horizontal line
+  y += 32;
+
+  // Add horizontal line after totals section
+  doc.moveTo(50, y).lineTo(550, y).stroke();
+
+  // Add address after the horizontal line with small space
+  y += spacing;
+  doc
+    .fontSize(12)
+    .text("Meet hamal-Belbeis, Phone: 01202087422 - 01206209160", 50, y);
 
   // Finalize PDF
   doc.end();
