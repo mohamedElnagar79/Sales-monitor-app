@@ -14,9 +14,10 @@ const fs = require("fs");
 
 function generateInvoice(invoiceData, newInvoiceItems) {
   const doc = new PDFDocument();
+
   // Create a write stream to save the PDF
   const writeStream = fs.createWriteStream(
-    `./public/invoice_${invoiceData.id}.pdf`
+    `./public/invoices/invoice_${invoiceData.id}.pdf`
   );
   doc.pipe(writeStream);
 
@@ -27,12 +28,10 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   // Define the margin and line color
   const marginBeforeTable = 40; // Increase margin before the table
   const headerColor = "#f0f0f0"; // Background color for the header
-  const headerHeight = 30; // Height for the header
-  const rowHeight = 40; // Increased height for each row
+  const rowHeight = 30; // Height for both the header and rows
 
   // Invoice info with increased font size
-  // doc.fontSize(20).text(`Computer World Elnagar`, { align: "left" });
-  doc.fontSize(18).text(`Invoice ID: ${invoiceData.id}`, { align: "left" });
+  doc.fontSize(18).text(`Invoice ID: ${invoiceData.id}`);
   doc
     .fontSize(18)
     .text(`Customer Name: ${invoiceData.clientId}`, { align: "left" });
@@ -41,40 +40,29 @@ function generateInvoice(invoiceData, newInvoiceItems) {
     .text(`Date: ${new Date().toLocaleDateString()}`, { align: "left" });
   doc.fontSize(18).moveDown();
 
-  // Draw a single horizontal line above the header
-  // doc
-  //   .strokeColor(headerColor)
-  //   .lineWidth(1)
-  //   .moveTo(50, 200)
-  //   .lineTo(550, 200)
-  //   .stroke();
+  // Draw table header with the same height as table rows
+  doc.rect(50, 210, 500, rowHeight).fill(headerColor);
 
-  // Draw table header
-  doc.rect(50, 210, 500, headerHeight).fill(headerColor);
-
-  // Set header text style
+  // Set header text style with correct vertical alignment
   doc.fontSize(14).fillColor("black");
-  doc.text("Items", 50, 215);
-  doc.text("Quantity", 250, 215);
-  doc.text("Price", 350, 215);
-  doc.text("Total", 450, 215);
+  doc.text("Items", 50, 210 + (rowHeight - 14) / 2); // Adjust to center vertically
+  doc.text("Quantity", 250, 210 + (rowHeight - 14) / 2);
+  doc.text("Price", 350, 210 + (rowHeight - 14) / 2);
+  doc.text("Total", 450, 210 + (rowHeight - 14) / 2);
 
-  // Draw a horizontal line under the headers
-  doc.moveTo(50, 245).lineTo(550, 245).stroke();
-
-  let y = 250; // Starting y position for the table rows
+  let y = 210 + rowHeight; // Starting y position for the table rows
 
   // Loop through the items to add them to the table
   newInvoiceItems.forEach((item) => {
     // Draw a border for each row
     doc.rect(50, y, 500, rowHeight).stroke();
 
-    // Set row text style
+    // Set row text style and center vertically
     doc.fillColor("black");
-    doc.text(item.productName, 50, y + 10); // Adjust y for vertical alignment
-    doc.text(item.quantity, 250, y + 10); // Adjust y for vertical alignment
-    doc.text(item.piecePrice, 350, y + 10); // Adjust y for vertical alignment
-    doc.text(item.quantity * item.piecePrice, 450, y + 10); // Adjust y for vertical alignment
+    doc.text(item.productName, 50, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
+    doc.text(item.quantity, 250, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
+    doc.text(item.piecePrice, 350, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
+    doc.text(item.quantity * item.piecePrice, 450, y + (rowHeight - 14) / 2); // Adjust y for vertical alignment
 
     y += rowHeight; // Move to the next row
   });
@@ -87,15 +75,11 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   // Add total, amount paid, and remainder
   y += 30;
-  doc.text(`Total: ${invoiceData.total.toFixed(2)}`, 400, y);
+  doc.text(`Total: ${invoiceData.total}`, 400, y);
   y += 20;
-  doc.text(`Amount Paid: ${invoiceData.amountPaid.toFixed(2)}`, 400, y);
+  doc.text(`Amount Paid: ${invoiceData.amountPaid}`, 400, y);
   y += 20;
-  doc.text(
-    `Remainder: ${(invoiceData.total - invoiceData.amountPaid).toFixed(2)}`,
-    400,
-    y
-  );
+  doc.text(`Remainder: ${invoiceData.total - invoiceData.amountPaid}`, 400, y);
 
   // Finalize PDF
   doc.end();
@@ -106,6 +90,7 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   return writeStream.path;
 }
+
 exports.createNewInvoice = async (req, res, next) => {
   const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
   let clientId = req.body.clientId;
@@ -173,7 +158,7 @@ exports.createNewInvoice = async (req, res, next) => {
     });
     generateInvoice(newInvoice.dataValues, newInvoiceItems);
     let invoicePath =
-      process.env.SERVER_HOST + `/public/invoice_${newInvoice.id}.pdf`;
+      process.env.SERVER_HOST + `/public/invoices/invoice_${newInvoice.id}.pdf`;
     console.log("invoicePath ", invoicePath);
     return res.status(200).json({
       status_code: 200,
