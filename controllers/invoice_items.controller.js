@@ -10,6 +10,189 @@ const IvoicePayments = require("../models/invoice_payments.model");
 const Returns = require("../models/returns.model");
 const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+
+function generateInvoice(invoiceData, newInvoiceItems) {
+  const doc = new PDFDocument();
+
+  // Create a write stream to save the PDF
+  const writeStream = fs.createWriteStream(
+    `./public/invoices/invoice_${invoiceData.id}.pdf`
+  );
+  doc.registerFont("Cairo", "./public/fonts/Cairo-Regular.ttf");
+  doc.registerFont("Cairo-Bold", "./public/fonts/Cairo-Bold.ttf");
+  doc.pipe(writeStream);
+
+  // Invoice title
+  doc.fontSize(25).text("Invoice", { align: "left" });
+  doc.moveDown();
+
+  // Add brand name at the top
+  doc.fontSize(18).text("Computer World Elnagar", { align: "left" });
+  doc.moveDown();
+
+  // Define styles
+  const headerColor = "#f0f0f0"; // Background color for the header
+  const rowHeight = 30; // Height for both the header and rows
+  const paddingLeft = 5; // Padding for the "Items" column
+
+  // Dynamically calculate starting Y position to center the table vertically
+  const totalTableHeight = rowHeight * (newInvoiceItems.length + 1); // Header + rows
+  const pageHeight = doc.page.height;
+  const startY = (pageHeight - totalTableHeight) / 2;
+
+  // Invoice info with increased font size
+  doc.fontSize(18).text(`Invoice ID: ${invoiceData.id}`);
+  doc
+    .fontSize(18)
+    .text(`Customer Name: ${invoiceData.clientId}`, { align: "left" });
+  doc
+    .fontSize(18)
+    .text(`Date: ${new Date().toLocaleDateString()}`, { align: "left" });
+  doc.fontSize(18).moveDown();
+
+  // Column widths
+  const productNameWidth = 200;
+  const quantityWidth = 100;
+  const priceWidth = 100;
+  const totalWidth = 100;
+  const tableWidth = productNameWidth + quantityWidth + priceWidth + totalWidth;
+
+  // Draw table header
+  doc.rect(50, startY, tableWidth, rowHeight).fill(headerColor);
+
+  // Set header text style with correct vertical alignment
+  doc.fontSize(14).fillColor("black");
+  doc.text("Product", 50 + paddingLeft, startY + (rowHeight - 16) / 2, {
+    width: productNameWidth,
+    align: "left",
+  });
+  doc.text(
+    "Quantity",
+    50 + productNameWidth + paddingLeft,
+    startY + (rowHeight - 14) / 2,
+    { width: quantityWidth, align: "left" }
+  );
+  doc.text(
+    "Price",
+    50 + productNameWidth + quantityWidth + paddingLeft,
+    startY + (rowHeight - 14) / 2,
+    { width: priceWidth, align: "left" }
+  );
+  doc.text(
+    "Total",
+    50 + productNameWidth + quantityWidth + priceWidth + paddingLeft,
+    startY + (rowHeight - 14) / 2,
+    { width: totalWidth, align: "left" }
+  );
+
+  let y = startY + rowHeight; // Starting y position for the table rows
+
+  // Loop through the items to add them to the table
+  newInvoiceItems.forEach((item) => {
+    // Draw a border for each row
+    doc.rect(50, y, tableWidth, rowHeight).stroke();
+
+    // Set row text style
+    doc.fillColor("black").font("Cairo");
+
+    // Check if the product name contains Arabic characters
+    const isArabic = /[ء-ي]/u.test(item.productName);
+
+    // Apply padding and set text with reversed words if necessary
+    if (isArabic) {
+      const reversedWords = item.productName.split(" ").reverse().join(" ");
+      doc.text(reversedWords, 50 + paddingLeft, y + (rowHeight - 16) / 2, {
+        width: productNameWidth,
+        align: "left",
+        direction: "rtl",
+      });
+    } else {
+      doc.text(item.productName, 50 + paddingLeft, y + (rowHeight - 16) / 2, {
+        width: productNameWidth,
+        align: "left",
+      });
+    }
+
+    // Align quantity, price, and total in their respective columns
+    doc.text(
+      item.quantity,
+      50 + productNameWidth + paddingLeft,
+      y + (rowHeight - 16) / 2,
+      { width: quantityWidth, align: "left" }
+    );
+    doc.text(
+      isNaN(item.piecePrice) ? "0.00" : parseFloat(item.piecePrice).toFixed(2),
+      50 + productNameWidth + quantityWidth + paddingLeft,
+      y + (rowHeight - 16) / 2,
+      { width: priceWidth, align: "left" }
+    );
+    doc.text(
+      isNaN(item.quantity * item.piecePrice)
+        ? "0.00"
+        : (item.quantity * item.piecePrice).toFixed(2),
+      50 + productNameWidth + quantityWidth + priceWidth + paddingLeft,
+      y + (rowHeight - 16) / 2,
+      { width: totalWidth, align: "left" }
+    );
+
+    y += rowHeight; // Move to the next row
+  });
+
+  // Draw another horizontal line after the table
+  doc
+    .moveTo(50, y)
+    .lineTo(50 + tableWidth, y)
+    .stroke();
+
+  // Draw border around the entire table
+  doc.rect(50, startY, tableWidth, y - startY).stroke();
+
+  // Calculate bottom margin, fit all elements within the last 15% of the page
+  const bottomMarginY = pageHeight * 0.77; // Start at 77% down the page
+  const spacing = 15; // Space between sections
+
+  y = bottomMarginY;
+
+  // Add total on the left
+  doc.fontSize(14).text(`Total: ${invoiceData.total} EGP`, 375, y);
+  y += spacing;
+
+  // Move "Amount Paid" and "Remainder" to the right
+  doc.text(`Paid: ${invoiceData.amountPaid} EGP`, 375, y);
+  y += spacing;
+  doc.text(
+    `Remainder: ${invoiceData.total - invoiceData.amountPaid} EGP`,
+    375,
+    y
+  );
+
+  // Add margin (2rem ~ 32px) before the horizontal line
+  y += 32;
+
+  // Add horizontal line after totals section
+  doc
+    .moveTo(50, y)
+    .lineTo(50 + tableWidth, y)
+    .stroke();
+
+  // Add address after the horizontal line with small space
+  y += spacing;
+  doc
+    .fontSize(12)
+    .text("Meet hamal-Belbeis, Phone: 01202087422 - 01206209160", 50, y);
+
+  // Finalize PDF
+  doc.end();
+
+  writeStream.on("finish", () => {
+    console.log(`Invoice ${invoiceData.id} generated successfully.`);
+  });
+
+  return writeStream.path;
+}
+
 exports.createNewInvoice = async (req, res, next) => {
   const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
   let clientId = req.body.clientId;
@@ -75,12 +258,17 @@ exports.createNewInvoice = async (req, res, next) => {
       clientId,
       invoiceId,
     });
+    generateInvoice(newInvoice.dataValues, newInvoiceItems);
+    let invoicePath =
+      process.env.SERVER_HOST + `/public/invoices/invoice_${newInvoice.id}.pdf`;
+    console.log("invoicePath ", invoicePath);
     return res.status(200).json({
       status_code: 200,
-      data: newInvoice,
+      data: invoicePath,
       message: "success",
     });
   } catch (error) {
+    console.log("error ", error.message);
     return res.status(500).json({
       status_code: 500,
       data: null,

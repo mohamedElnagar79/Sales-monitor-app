@@ -7,7 +7,7 @@
     "test": "nodemon npm start test",
     "seed": "npx sequelize-cli db:seed:all",
     "migration": "npx sequelize-cli db:migrate",
-    "start": "npm run migration && node app.js"
+    "start": "npm run migration && nodemon npm start"
   },
   "author": "mohamed elnagar",
   "license": "ISC",
@@ -22,6 +22,7 @@
     "moment": "^2.30.1",
     "mysql2": "^3.9.7",
     "nodemailer": "^6.9.13",
+    "pdfkit": "^0.15.0",
     "sequelize": "^6.37.3"
   },
   "devDependencies": {
