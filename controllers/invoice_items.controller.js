@@ -13,8 +13,9 @@ const InvoiceReturnsMoney = require("../models/invoice-returns-money.model");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
-function generateInvoice(invoiceData, newInvoiceItems) {
+function generateInvoice(invoiceData, newInvoiceItems, clientName) {
   const doc = new PDFDocument();
+  console.log("============> ", clientName);
 
   // Create a write stream to save the PDF
   const writeStream = fs.createWriteStream(
@@ -25,7 +26,7 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   doc.pipe(writeStream);
 
   // Invoice title
-  doc.fontSize(25).text("Invoice", { align: "left" });
+  doc.fontSize(25).text("Invoice", { align: "center" });
   doc.moveDown();
 
   // Add brand name at the top
@@ -44,9 +45,23 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   // Invoice info with increased font size
   doc.fontSize(18).text(`Invoice ID: ${invoiceData.id}`);
-  doc
-    .fontSize(18)
-    .text(`Customer Name: ${invoiceData.clientId}`, { align: "left" });
+
+  const isClientNameArabic = /[ء-ي]/u.test(clientName);
+
+  // Apply padding and set text with reversed words if necessary
+  if (isClientNameArabic) {
+    const reversedWords = clientName.split(" ").reverse().join(" ");
+    doc
+      .font("Cairo")
+      .fontSize(18)
+      .text(`Customer Name: ${reversedWords}`, { align: "left" });
+  } else {
+    doc
+      .font("Cairo")
+      .fontSize(18)
+      .text(`Customer Name: ${clientName}`, { align: "left" });
+  }
+
   doc
     .fontSize(18)
     .text(`Date: ${new Date().toLocaleDateString()}`, { align: "left" });
@@ -64,26 +79,32 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   // Set header text style with correct vertical alignment
   doc.fontSize(14).fillColor("black");
-  doc.text("Product", 50 + paddingLeft, startY + (rowHeight - 16) / 2, {
+
+  const headerHeight = doc.heightOfString("Product", {
+    width: productNameWidth,
+  });
+  const headerYPosition = (rowHeight - headerHeight) / 2; // Calculate center of header text
+
+  doc.text("Product", 50 + paddingLeft, startY + headerYPosition, {
     width: productNameWidth,
     align: "left",
   });
   doc.text(
     "Quantity",
     50 + productNameWidth + paddingLeft,
-    startY + (rowHeight - 14) / 2,
+    startY + headerYPosition,
     { width: quantityWidth, align: "left" }
   );
   doc.text(
     "Price",
     50 + productNameWidth + quantityWidth + paddingLeft,
-    startY + (rowHeight - 14) / 2,
+    startY + headerYPosition,
     { width: priceWidth, align: "left" }
   );
   doc.text(
     "Total",
     50 + productNameWidth + quantityWidth + priceWidth + paddingLeft,
-    startY + (rowHeight - 14) / 2,
+    startY + headerYPosition,
     { width: totalWidth, align: "left" }
   );
 
@@ -97,19 +118,43 @@ function generateInvoice(invoiceData, newInvoiceItems) {
     // Set row text style
     doc.fillColor("black").font("Cairo");
 
+    // Measure the text height for each item
+    const productHeight = doc.heightOfString(item.productName, {
+      width: productNameWidth,
+    });
+    const quantityHeight = doc.heightOfString(item.quantity.toString(), {
+      width: quantityWidth,
+    });
+    const priceHeight = doc.heightOfString(
+      isNaN(item.piecePrice) ? "0.00" : item.piecePrice.toString(),
+      { width: priceWidth }
+    );
+    const totalHeight = doc.heightOfString(
+      isNaN(item.quantity * item.piecePrice)
+        ? "0.00"
+        : (item.quantity * item.piecePrice).toFixed(2),
+      { width: totalWidth }
+    );
+
+    // Calculate Y position for vertically centering each item in the row
+    const productYPosition = (rowHeight - productHeight) / 2;
+    const quantityYPosition = (rowHeight - quantityHeight) / 2;
+    const priceYPosition = (rowHeight - priceHeight) / 2;
+    const totalYPosition = (rowHeight - totalHeight) / 2;
+
     // Check if the product name contains Arabic characters
     const isArabic = /[ء-ي]/u.test(item.productName);
 
     // Apply padding and set text with reversed words if necessary
     if (isArabic) {
       const reversedWords = item.productName.split(" ").reverse().join(" ");
-      doc.text(reversedWords, 50 + paddingLeft, y + (rowHeight - 16) / 2, {
+      doc.text(reversedWords, 50 + paddingLeft, y + productYPosition, {
         width: productNameWidth,
         align: "left",
         direction: "rtl",
       });
     } else {
-      doc.text(item.productName, 50 + paddingLeft, y + (rowHeight - 16) / 2, {
+      doc.text(item.productName, 50 + paddingLeft, y + productYPosition, {
         width: productNameWidth,
         align: "left",
       });
@@ -119,13 +164,16 @@ function generateInvoice(invoiceData, newInvoiceItems) {
     doc.text(
       item.quantity,
       50 + productNameWidth + paddingLeft,
-      y + (rowHeight - 16) / 2,
-      { width: quantityWidth, align: "left" }
+      y + quantityYPosition,
+      {
+        width: quantityWidth,
+        align: "left",
+      }
     );
     doc.text(
       isNaN(item.piecePrice) ? "0.00" : parseFloat(item.piecePrice).toFixed(2),
       50 + productNameWidth + quantityWidth + paddingLeft,
-      y + (rowHeight - 16) / 2,
+      y + priceYPosition,
       { width: priceWidth, align: "left" }
     );
     doc.text(
@@ -133,7 +181,7 @@ function generateInvoice(invoiceData, newInvoiceItems) {
         ? "0.00"
         : (item.quantity * item.piecePrice).toFixed(2),
       50 + productNameWidth + quantityWidth + priceWidth + paddingLeft,
-      y + (rowHeight - 16) / 2,
+      y + totalYPosition,
       { width: totalWidth, align: "left" }
     );
 
@@ -155,18 +203,25 @@ function generateInvoice(invoiceData, newInvoiceItems) {
 
   y = bottomMarginY;
 
-  // Add total on the left
-  doc.fontSize(14).text(`Total: ${invoiceData.total} EGP`, 375, y);
-  y += spacing;
+  const labelX = 370; // X position for the titles (first column)
+  const valueX = 450; // X position for the values (second column)
+  const gridSpacing = 16; // Space between rows (1rem ~ 16px)
 
-  // Move "Amount Paid" and "Remainder" to the right
-  doc.text(`Paid: ${invoiceData.amountPaid} EGP`, 375, y);
-  y += spacing;
-  doc.text(
-    `Remainder: ${invoiceData.total - invoiceData.amountPaid} EGP`,
-    375,
-    y
-  );
+  // Add "Total" title and value in two columns aligned to the right
+  doc.fontSize(14).text("Total:", labelX, y, { align: "left" });
+  doc.text(`${invoiceData.total} EGP`, valueX, y, { align: "left" });
+  y += gridSpacing;
+
+  // Add "Paid" title and value in two columns aligned to the right
+  doc.text("Paid:", labelX, y, { align: "left" });
+  doc.text(`${invoiceData.amountPaid} EGP`, valueX, y, { align: "left" });
+  y += gridSpacing;
+
+  // Add "Remainder" title and value in two columns aligned to the right
+  doc.text("Remainder:", labelX, y, { align: "left" });
+  doc.text(`${invoiceData.total - invoiceData.amountPaid} EGP`, valueX, y, {
+    align: "left",
+  });
 
   // Add margin (2rem ~ 32px) before the horizontal line
   y += 32;
@@ -181,7 +236,7 @@ function generateInvoice(invoiceData, newInvoiceItems) {
   y += spacing;
   doc
     .fontSize(12)
-    .text("Meet hamal-Belbeis, Phone: 01202087422 - 01206209160", 50, y);
+    .text("Meet hamal-Belbeis, Phone: 01202087422 - 01017686383", 50, y);
 
   // Finalize PDF
   doc.end();
@@ -198,6 +253,7 @@ exports.createNewInvoice = async (req, res, next) => {
   let clientId = req.body.clientId;
   let invoiceId;
   let total = 0;
+  let clientNameToPrint;
   let remainingBalance = 0;
 
   try {
@@ -208,6 +264,15 @@ exports.createNewInvoice = async (req, res, next) => {
         phone: phone,
       });
       clientId = client.dataValues.id;
+      clientNameToPrint = client.dataValues.name;
+      console.log("clientNameToPrint from create", clientNameToPrint);
+    }
+    if (clientId && !clientName) {
+      const client = await Clients.findByPk(clientId, {
+        attributes: ["id", "name"],
+      });
+      clientNameToPrint = client.dataValues.name;
+      console.log("clientNameToPrint from old find", clientNameToPrint);
     }
     console.log("===> ", clientId, clientName);
     if (!clientName && !clientId) {
@@ -258,7 +323,8 @@ exports.createNewInvoice = async (req, res, next) => {
       clientId,
       invoiceId,
     });
-    generateInvoice(newInvoice.dataValues, newInvoiceItems);
+    console.log("name ", clientNameToPrint);
+    generateInvoice(newInvoice.dataValues, newInvoiceItems, clientNameToPrint);
     let invoicePath =
       process.env.SERVER_HOST + `/public/invoices/invoice_${newInvoice.id}.pdf`;
     console.log("invoicePath ", invoicePath);
