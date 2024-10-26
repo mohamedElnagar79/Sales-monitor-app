@@ -249,7 +249,8 @@ function generateInvoice(invoiceData, newInvoiceItems, clientName) {
 }
 
 exports.createNewInvoice = async (req, res, next) => {
-  const { clientName, phone, newInvoiceItems, comments, amountPaid } = req.body;
+  const { clientName, phone, newInvoiceItems, comments, amountPaid, print } =
+    req.body;
   let clientId = req.body.clientId;
   let invoiceId;
   let total = 0;
@@ -265,16 +266,13 @@ exports.createNewInvoice = async (req, res, next) => {
       });
       clientId = client.dataValues.id;
       clientNameToPrint = client.dataValues.name;
-      console.log("clientNameToPrint from create", clientNameToPrint);
     }
-    if (clientId && !clientName) {
+    if (clientId && !clientName && print) {
       const client = await Clients.findByPk(clientId, {
         attributes: ["id", "name"],
       });
       clientNameToPrint = client.dataValues.name;
-      console.log("clientNameToPrint from old find", clientNameToPrint);
     }
-    console.log("===> ", clientId, clientName);
     if (!clientName && !clientId) {
       return res.status(400).json({
         status_code: 400,
@@ -323,14 +321,18 @@ exports.createNewInvoice = async (req, res, next) => {
       clientId,
       invoiceId,
     });
-    console.log("name ", clientNameToPrint);
-    generateInvoice(newInvoice.dataValues, newInvoiceItems, clientNameToPrint);
+    if (print) {
+      generateInvoice(
+        newInvoice.dataValues,
+        newInvoiceItems,
+        clientNameToPrint
+      );
+    }
     let invoicePath =
       process.env.SERVER_HOST + `/public/invoices/invoice_${newInvoice.id}.pdf`;
-    console.log("invoicePath ", invoicePath);
     return res.status(200).json({
       status_code: 200,
-      data: invoicePath,
+      data: print ? invoicePath : null,
       message: "success",
     });
   } catch (error) {
