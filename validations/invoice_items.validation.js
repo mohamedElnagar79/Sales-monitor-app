@@ -99,6 +99,10 @@ exports.sellProductsValidation = [
     .withMessage("newInvoiceItems piecePrice must be a number")
     .isLength({ max: 10 })
     .withMessage("newInvoiceItems piecePrice must be less than 10 nums long"),
+  body("print")
+    .optional()
+    .isBoolean()
+    .withMessage("print key must be true or false only"),
 ];
 
 exports.getLastSalesValidation = [
