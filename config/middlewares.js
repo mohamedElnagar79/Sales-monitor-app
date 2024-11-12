@@ -2,6 +2,7 @@ const {
   checkAttachmentType,
   formatDate,
   truncateText,
+  generateInvoicePdf,
 } = require("../middlewares/helperFunctions");
 const mwError = require("../middlewares/validationMW");
 const auth = require("../middlewares/authMW");
@@ -11,4 +12,5 @@ module.exports = {
   auth,
   formatDate,
   truncateText,
+  generateInvoicePdf,
 };
