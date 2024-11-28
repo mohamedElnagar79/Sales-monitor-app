@@ -84,10 +84,12 @@ exports.createNewInvoice = async (req, res, next) => {
       invoiceId,
     });
     if (print) {
+      console.log("yes yes ===========>");
       config.generateInvoicePdf(
         newInvoice.dataValues,
         newInvoiceItems,
-        clientNameToPrint
+        clientNameToPrint,
+        false
       );
     }
     let invoicePath =

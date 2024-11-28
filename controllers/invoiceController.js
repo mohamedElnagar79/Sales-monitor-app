@@ -186,15 +186,14 @@ exports.getInvoicePayments = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { invoiceId, updatedinvoiceItems, newPayments } = req.body;
+    const { invoiceId, updatedinvoiceItems, newPayments, print } = req.body;
     let returnedItems = [];
     let totalReturnedAmount = 0;
     let returnedMoney = 0;
-    let invoice_returns;
+    let invoice_returns, invoice_items;
     let price_changed = false;
     let invoice_returns_money_objects = [];
     const invoice = await Invoices.findByPk(invoiceId);
-    console.log("invoiiiii ", invoice.dataValues);
     let oldRemainder = invoice.remainingBalance;
     let totalOFRemainder = invoice.remainingBalance;
     if (updatedinvoiceItems.length > 0) {
@@ -259,7 +258,7 @@ exports.updateInvoice = async (req, res) => {
               totalReturnedAmount += newQuantity * invoiceItem.piecePrice;
             }
             // get invoice items to calc toal
-            const invoice_items = await InvoiceItems.findAll({
+            invoice_items = await InvoiceItems.findAll({
               where: { invoiceId: invoiceId },
             });
             if (oldPiecePrice != invoiceItem.piecePrice) {
@@ -409,12 +408,28 @@ exports.updateInvoice = async (req, res) => {
       );
     }
 
+    if (print) {
+      const client = await Clients.findByPk(invoice.clientId, {
+        attributes: ["id", "name"],
+      });
+      let clientNameToPrint = client.dataValues.name;
+      config.generateInvoicePdf(
+        invoice,
+        invoice_items,
+        clientNameToPrint,
+        true
+      );
+    }
+    let invoicePath =
+      process.env.SERVER_HOST +
+      `/public/invoices/updates/invoice_${invoice.id}.pdf`;
     return res.status(200).json({
       status_code: 200,
-      data: null,
+      data: print ? invoicePath : null,
       message: "updated successfully",
     });
   } catch (error) {
+    console.log("errrorrrorororo ", error);
     return res.status(500).json({
       status_code: 500,
       data: null,
